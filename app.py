@@ -52,21 +52,19 @@ class User(UserMixin, db.Model):
 
 class Category(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    slug = db.Column(db.String(100), nullable=False, unique=True)
-    products = db.relationship('Product', backref='category', lazy=True)
+    name = db.Column(db.String(200), unique=True, nullable=False)
+    products = db.relationship('Product', back_populates='category', lazy=True)
 
-    def __init__(self, name):
-        self.name = name
-        self.slug = slugify(name)
+    def __repr__(self):
+        return f'<Category {self.name}>'
 
 class Product(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text)
     category_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=False)
-    category = db.relationship('Category', backref=db.backref('products', lazy=True))
-    images = db.relationship('ProductImage', back_populates='product', lazy=True)
+    category = db.relationship('Category', back_populates='products', lazy=True)
+    images = db.relationship('ProductImage', back_populates='product', lazy=True, cascade="all, delete-orphan")
 
     def primary_image(self):
         return next((img for img in self.images if img.is_primary), self.images[0] if self.images else None)
@@ -337,12 +335,13 @@ def delete_category(id):
         flash('Kategori başarıyla silindi')
     return redirect(url_for('admin'))
 
-@app.route('/add_category', methods=['POST'])
+@app.route('/admin/add_category', methods=['POST'])
 @login_required
 def add_category():
     name = request.form.get('name')
     if name:
-        if not Category.query.filter_by(name=name).first():
+        existing_category = Category.query.filter_by(name=name).first()
+        if not existing_category:
             category = Category(name=name)
             db.session.add(category)
             db.session.commit()
