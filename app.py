@@ -214,7 +214,6 @@ def edit_product(id):
                 
                 # Veritabanına kaydet
                 image = ProductImage(
-                    filename=file.filename,
                     path=result['secure_url'],
                     product_id=product.id
                 )
