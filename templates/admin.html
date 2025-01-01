@@ -133,21 +133,22 @@
                                 <div class="product-images">
                                     {% for image in product.images %}
                                     <div class="product-image d-inline-block me-2">
-                                        <img src="{{ image.path }}" alt="{{ product.name }}" style="height: 50px; width: 50px; object-fit: cover;">
-                                        <br>
-                                        <a href="{{ url_for('delete_product_image', id=image.id) }}" 
-                                           class="btn btn-danger btn-sm mt-1"
-                                           onclick="return confirm('Bu görseli silmek istediğinizden emin misiniz?')">
-                                            Sil
-                                        </a>
-                                        {% if not image.is_primary %}
-                                        <a href="{{ url_for('make_primary_image', product_id=product.id, image_id=image.id) }}" 
-                                           class="btn btn-primary btn-sm mt-1">
-                                            Ana Görsel Yap
-                                        </a>
-                                        {% else %}
-                                        <span class="badge bg-success mt-1">Ana Görsel</span>
-                                        {% endif %}
+                                        <img src="{{ url_for('static', filename=image.path) }}" alt="{{ product.name }}" style="height: 50px; width: 50px; object-fit: cover;">
+                                        <div class="mt-1">
+                                            <a href="{{ url_for('delete_product_image', id=image.id) }}" 
+                                               class="btn btn-danger btn-sm"
+                                               onclick="return confirm('Bu görseli silmek istediğinizden emin misiniz?')">
+                                                Sil
+                                            </a>
+                                            {% if not image.is_primary %}
+                                            <a href="{{ url_for('make_primary_image', product_id=product.id, image_id=image.id) }}" 
+                                               class="btn btn-primary btn-sm">
+                                                Ana Görsel
+                                            </a>
+                                            {% else %}
+                                            <span class="badge bg-success">Ana Görsel</span>
+                                            {% endif %}
+                                        </div>
                                     </div>
                                     {% endfor %}
                                 </div>

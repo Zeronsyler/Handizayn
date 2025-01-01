@@ -65,21 +65,24 @@ class Product(db.Model):
     name = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text)
     category_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=False)
-    images = db.relationship('ProductImage', backref='product', lazy=True, cascade="all, delete-orphan")
+    category = db.relationship('Category', backref=db.backref('products', lazy=True))
+    images = db.relationship('ProductImage', back_populates='product', lazy=True)
 
     def primary_image(self):
-        primary = next((img for img in self.images if img.is_primary), None)
-        return primary if primary else (self.images[0] if self.images else None)
+        return next((img for img in self.images if img.is_primary), self.images[0] if self.images else None)
 
-    def __str__(self):
-        return f"{self.name} - {self.category_id}"
+    def __repr__(self):
+        return f'<Product {self.name}>'
 
 class ProductImage(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    filename = db.Column(db.String(200), nullable=False)
-    path = db.Column(db.String(200), nullable=False)
-    is_primary = db.Column(db.Boolean, default=False)  # Ana görsel mi?
+    path = db.Column(db.String(500), nullable=False)
+    is_primary = db.Column(db.Boolean, default=False)
     product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=False)
+    product = db.relationship('Product', back_populates='images')
+
+    def __repr__(self):
+        return f'<ProductImage {self.path}>'
 
 class Image(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -148,6 +151,10 @@ def add_product():
         category_id = request.form['category']
         files = request.files.getlist('images')
         
+        if not files:
+            flash('Lütfen en az bir resim seçin!', 'error')
+            return redirect(url_for('admin'))
+        
         # Ürünü oluştur
         product = Product(
             name=name,
@@ -161,23 +168,27 @@ def add_product():
         for i, file in enumerate(files):
             if file and allowed_file(file.filename):
                 try:
+                    print(f"Uploading file: {file.filename}")
                     # Cloudinary'ye yükle
                     result = cloudinary.uploader.upload(file)
+                    print(f"Cloudinary result: {result}")
                     
                     # Veritabanına kaydet
                     image = ProductImage(
-                        path=result['secure_url'],  # secure_url kullan
+                        path=result['secure_url'],
                         product_id=product.id,
-                        is_primary=(i == 0)  # İlk resim ana resim olsun
+                        is_primary=(i == 0)
                     )
                     db.session.add(image)
+                    print(f"Added image to database: {image.path}")
                 except Exception as e:
-                    print(f"Cloudinary upload failed: {e}")
+                    print(f"Error uploading to Cloudinary: {str(e)}")
                     continue
         
         db.session.commit()
         flash('Ürün başarıyla eklendi!', 'success')
     except Exception as e:
+        print(f"Error in add_product: {str(e)}")
         db.session.rollback()
         flash(f'Ürün eklenirken bir hata oluştu: {str(e)}', 'error')
     
