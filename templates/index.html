@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Han Dizayn - El Yapımı Halılar</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <img src="{{ url_for('static', filename='images/han-dizayn-logo.png') }}" alt="Han Dizayn Logo" class="brand-logo">
+                HAN DİZAYN
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#home">Ana Sayfa</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#categories">Koleksiyonlar</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#about">Hakkımızda</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#contact">İletişim</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero" style="background-image: url('{{ url_for('static', filename='images/hero/hero-bg.jpg') }}')">
+        <div class="hero-pattern"></div>
+        <div class="hero-content" data-aos="fade-up">
+            <h1>HAN DİZAYN</h1>
+            <p>Geleneksel Sanatın Modern Yorumu</p>
+            <div class="hero-buttons">
+                <a href="#categories" class="btn btn-primary btn-lg">Koleksiyonumuzu Keşfedin</a>
+                <a href="#about" class="btn btn-outline-light btn-lg ms-3">Hakkımızda</a>
+            </div>
+        </div>
+        <div class="scroll-indicator">
+            <div class="mouse">
+                <div class="wheel"></div>
+            </div>
+            <div class="arrows">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Categories Section -->
+    <section id="categories" class="section-padding">
+        <div class="container">
+            <div class="section-header text-center" data-aos="fade-up">
+                <h2>Koleksiyonlarımız</h2>
+                <p>El yapımı halılarımızda geleneksel motifleri modern tasarımlarla buluşturuyoruz</p>
+            </div>
+            <div class="row g-4">
+                {% for product in products %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100">
+                        {% if product.primary_image() %}
+                        <img src="{{ url_for('static', filename=product.primary_image().path) }}" 
+                             class="card-img-top product-image" alt="{{ product.name }}"
+                             style="height: 400px; object-fit: cover; cursor: pointer;"
+                             data-bs-toggle="modal" 
+                             data-bs-target="#imageModal{{ product.id }}">
+                        {% endif %}
+                        <div class="card-body">
+                            <h5 class="card-title">{{ product.name }}</h5>
+                            <p class="card-text">{{ product.description }}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <a href="#contact" class="btn btn-primary">İletişime Geçin</a>
+                                {% if product.images|length > 1 %}
+                                <button class="btn btn-outline-primary" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#galleryModal{{ product.id }}">
+                                    <i class="fas fa-images me-1"></i>
+                                    Tüm Görseller ({{ product.images|length }})
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tekli Görsel Modal -->
+                <div class="modal fade" id="imageModal{{ product.id }}" tabindex="-1">
+                    <div class="modal-dialog modal-lg modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header border-0">
+                                <h5 class="modal-title">{{ product.name }}</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body text-center p-0">
+                                <img src="{{ url_for('static', filename=product.primary_image().path) }}" 
+                                     class="img-fluid" 
+                                     alt="{{ product.name }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Galeri Modal -->
+                <div class="modal fade" id="galleryModal{{ product.id }}" tabindex="-1">
+                    <div class="modal-dialog modal-xl modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">{{ product.name }} - Tüm Görseller</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div id="carousel{{ product.id }}" class="carousel slide">
+                                    <div class="carousel-inner">
+                                        {% for image in product.images %}
+                                        <div class="carousel-item {% if loop.first %}active{% endif %}">
+                                            <img src="{{ url_for('static', filename=image.path) }}" 
+                                                 class="d-block w-100" 
+                                                 alt="{{ product.name }}"
+                                                 style="max-height: 70vh; object-fit: contain;">
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    {% if product.images|length > 1 %}
+                                    <button class="carousel-control-prev" type="button" 
+                                            data-bs-target="#carousel{{ product.id }}" data-bs-slide="prev">
+                                        <span class="carousel-control-prev-icon"></span>
+                                        <span class="visually-hidden">Önceki</span>
+                                    </button>
+                                    <button class="carousel-control-next" type="button" 
+                                            data-bs-target="#carousel{{ product.id }}" data-bs-slide="next">
+                                        <span class="carousel-control-next-icon"></span>
+                                        <span class="visually-hidden">Sonraki</span>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                                <!-- Küçük Resimler -->
+                                <div class="row mt-3 g-2">
+                                    {% for image in product.images %}
+                                    <div class="col-3 col-md-2">
+                                        <img src="{{ url_for('static', filename=image.path) }}" 
+                                             class="img-fluid rounded cursor-pointer" 
+                                             alt="{{ product.name }}"
+                                             style="height: 80px; object-fit: cover;"
+                                             onclick="document.querySelector('#carousel{{ product.id }} .carousel-item:nth-child({{ loop.index }})').classList.add('active')">
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="section-padding bg-light">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-6" data-aos="fade-right">
+                    <div class="about-content">
+                        <h2>Hakkımızda</h2>
+                        <p class="lead">20 yıllık tecrübemizle, geleneksel Türk halı sanatını modern tasarımlarla buluşturuyoruz.</p>
+                        <p>Her bir halımız, ustalarımız tarafından el yapımı olarak, en kaliteli malzemeler kullanılarak üretilmektedir. Koleksiyonlarımızda geleneksel motiflerimizi çağdaş bir yorumla sunuyoruz.</p>
+                        <div class="features">
+                            <div class="feature" data-aos="fade-up" data-aos-delay="100">
+                                <i class="fas fa-hand-holding-heart"></i>
+                                <h4>El Yapımı</h4>
+                                <p>Tüm halılarımız usta ellerde, özenle dokunuyor</p>
+                            </div>
+                            <div class="feature" data-aos="fade-up" data-aos-delay="200">
+                                <i class="fas fa-award"></i>
+                                <h4>Kalite</h4>
+                                <p>En kaliteli yün ve ipek kullanıyoruz</p>
+                            </div>
+                            <div class="feature" data-aos="fade-up" data-aos-delay="300">
+                                <i class="fas fa-palette"></i>
+                                <h4>Tasarım</h4>
+                                <p>Modern ve geleneksel tasarımları harmanlıyoruz</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6" data-aos="fade-left">
+                    <div class="about-image">
+                        <img src="{{ url_for('static', filename='images/about/workshop.jpg') }}" alt="Han Dizayn Atölyesi" class="img-fluid rounded shadow">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="section-padding">
+        <div class="container">
+            <div class="section-header text-center mb-5">
+                <h2>İletişim</h2>
+                <p>Sorularınız için bize ulaşın</p>
+            </div>
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <div class="contact-form">
+                        <form id="contactForm">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <input type="text" class="form-control" placeholder="Adınız" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <input type="email" class="form-control" placeholder="E-posta Adresiniz" required>
+                                </div>
+                                <div class="col-12">
+                                    <input type="text" class="form-control" placeholder="Konu" required>
+                                </div>
+                                <div class="col-12">
+                                    <textarea class="form-control" rows="5" placeholder="Mesajınız" required></textarea>
+                                </div>
+                                <div class="col-12 text-center">
+                                    <button type="submit" class="btn btn-primary btn-lg">
+                                        <i class="fas fa-paper-plane me-2"></i>Gönder
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-4">
+                    <h3>Han Dizayn</h3>
+                    <p>El yapımı halılarımızla yaşam alanlarınıza değer katıyoruz.</p>
+                    <div class="social-links">
+                        <a href="#"><i class="fab fa-facebook"></i></a>
+                        <a href="#"><i class="fab fa-instagram"></i></a>
+                        <a href="#"><i class="fab fa-twitter"></i></a>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <h4>Hızlı Bağlantılar</h4>
+                    <ul class="footer-links">
+                        <li><a href="#home">Ana Sayfa</a></li>
+                        <li><a href="#categories">Ürünler</a></li>
+                        <li><a href="#about">Hakkımızda</a></li>
+                        <li><a href="#contact">İletişim</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-4">
+                    <h4>İletişim Bilgileri</h4>
+                    <ul class="contact-info">
+                        <li><i class="fas fa-map-marker-alt"></i>Beştepe Mahallesi, 192004 Sokak No:5, Gaziantep</li>
+                        <li><i class="fas fa-phone"></i> +90 (542) 537 65 08</li>
+                        <li><i class="fas fa-envelope"></i> handizayn2734@gmail.com</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 Han Dizayn. Tüm hakları saklıdır.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>
+        AOS.init({
+            duration: 800,
+            once: true
+        });
+    </script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

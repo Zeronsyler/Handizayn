@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4">Admin Paneli</h2>
+    
+    <!-- Görsel Yönetimi -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3>Görsel Yönetimi</h3>
+        </div>
+        <div class="card-body">
+            <form action="{{ url_for('upload_image') }}" method="post" enctype="multipart/form-data">
+                <div class="mb-3">
+                    <label for="section" class="form-label">Bölüm Seçin</label>
+                    <select class="form-select" name="section" required>
+                        <option value="hero">Ana Sayfa Hero</option>
+                        <option value="about">Hakkımızda</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="image" class="form-label">Görsel Seçin</label>
+                    <input type="file" class="form-control" name="image" accept="image/*" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Görseli Yükle</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Mevcut Görseller -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3>Mevcut Görseller</h3>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                {% for image in images %}
+                <div class="col-md-4 mb-3">
+                    <div class="card">
+                        <img src="{{ url_for('static', filename=image.path) }}" class="card-img-top" alt="{{ image.name }}">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ image.section|title }}</h5>
+                            <p class="card-text">{{ image.name }}</p>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Ürün Yönetimi -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h3 class="mb-0">Ürün Yönetimi</h3>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProductModal">
+                <i class="fas fa-plus me-2"></i>Yeni Ürün Ekle
+            </button>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Görsel</th>
+                            <th>Ürün Adı</th>
+                            <th>Kategori</th>
+                            <th>İşlemler</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in products %}
+                        <tr>
+                            <td>
+                                {% if product.primary_image() %}
+                                <img src="{{ url_for('static', filename=product.primary_image().path) }}" 
+                                     alt="{{ product.name }}" 
+                                     style="height: 50px; width: 50px; object-fit: cover;">
+                                {% endif %}
+                            </td>
+                            <td>{{ product.name }}</td>
+                            <td>{{ product.category.name }}</td>
+                            <td>
+                                <button class="btn btn-primary btn-sm" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#editProductModal{{ product.id }}">
+                                    <i class="fas fa-edit me-1"></i>Düzenle
+                                </button>
+                                <a href="{{ url_for('delete_product', id=product.id) }}" 
+                                   class="btn btn-danger btn-sm"
+                                   onclick="return confirm('Bu ürünü silmek istediğinizden emin misiniz?')">
+                                    <i class="fas fa-trash me-1"></i>Sil
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Yeni Ürün Ekleme Modal -->
+    <div class="modal fade" id="addProductModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Yeni Ürün Ekle</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form action="{{ url_for('add_product') }}" method="post" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label class="form-label">Ürün Adı</label>
+                            <input type="text" class="form-control" name="name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Açıklama</label>
+                            <textarea class="form-control" name="description" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Kategori</label>
+                            <select class="form-select" name="category_id" required>
+                                {% for category in categories %}
+                                <option value="{{ category.id }}">{{ category.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Görseller</label>
+                            <input type="file" class="form-control" name="images" multiple accept="image/*" required>
+                            <small class="text-muted">İlk seçilen görsel ana görsel olarak kullanılacaktır.</small>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Ekle</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ürün Düzenleme Modalları -->
+    {% for product in products %}
+    <div class="modal fade" id="editProductModal{{ product.id }}" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Ürün Düzenle</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form action="{{ url_for('edit_product', id=product.id) }}" method="post" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label class="form-label">Ürün Adı</label>
+                            <input type="text" class="form-control" name="name" value="{{ product.name }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Açıklama</label>
+                            <textarea class="form-control" name="description" rows="3">{{ product.description }}</textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Kategori</label>
+                            <select class="form-select" name="category_id" required>
+                                {% for category in categories %}
+                                <option value="{{ category.id }}" {% if category.id == product.category_id %}selected{% endif %}>
+                                    {{ category.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Mevcut Görseller</label>
+                            <div class="row g-2 mb-2">
+                                {% for image in product.images %}
+                                <div class="col-4">
+                                    <img src="{{ url_for('static', filename=image.path) }}" 
+                                         class="img-fluid rounded" 
+                                         alt="{{ product.name }}">
+                                    <div class="text-center mt-1">
+                                        {% if image.is_primary %}
+                                        <span class="badge bg-primary">Ana Görsel</span>
+                                        {% endif %}
+                                        <a href="{{ url_for('delete_product_image', id=image.id) }}" 
+                                           class="btn btn-danger btn-sm"
+                                           onclick="return confirm('Bu görseli silmek istediğinizden emin misiniz?')">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Yeni Görseller Ekle</label>
+                            <input type="file" class="form-control" name="images" multiple accept="image/*">
+                            <small class="text-muted">Yeni görsel eklemezseniz mevcut görseller korunacaktır.</small>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Kaydet</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
