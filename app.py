@@ -1,24 +1,29 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, Markup
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
-import cloudinary
-import cloudinary.uploader
-import cloudinary.api
+try:
+    import cloudinary
+    import cloudinary.uploader
+    import cloudinary.api
+except ImportError:
+    print("Cloudinary import failed - check if package is installed")
 import os
-from flask import Markup
 import markdown
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-here')
 
 # Cloudinary yapılandırması
-cloudinary.config(
-    cloud_name='dy46noypm',
-    api_key='264772451632922',
-    api_secret='V29jE3GG-OftNLbdxv05-MJlbrA'
-)
+try:
+    cloudinary.config(
+        cloud_name='dy46noypm',
+        api_key='264772451632922',
+        api_secret='V29jE3GG-OftNLbdxv05-MJlbrA'
+    )
+except Exception as e:
+    print(f"Cloudinary configuration failed: {e}")
 
 # Desteklenen resim formatları
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
@@ -142,7 +147,11 @@ def add_product():
         for i, file in enumerate(files):
             if file and allowed_file(file.filename):
                 # Cloudinary'ye yükle
-                result = cloudinary.uploader.upload(file)
+                try:
+                    result = cloudinary.uploader.upload(file)
+                except Exception as e:
+                    print(f"Cloudinary upload failed: {e}")
+                    continue
                 
                 # Veritabanına kaydet
                 image = ProductImage(
@@ -173,7 +182,11 @@ def edit_product(id):
         for file in files:
             if file and allowed_file(file.filename):
                 # Cloudinary'ye yükle
-                result = cloudinary.uploader.upload(file)
+                try:
+                    result = cloudinary.uploader.upload(file)
+                except Exception as e:
+                    print(f"Cloudinary upload failed: {e}")
+                    continue
                 
                 # Veritabanına kaydet
                 image = ProductImage(
@@ -194,8 +207,11 @@ def delete_image(id):
     image = ProductImage.query.get_or_404(id)
     
     # Cloudinary'den sil
-    public_id = image.path.split('/')[-1].split('.')[0]
-    cloudinary.uploader.destroy(public_id)
+    try:
+        public_id = image.path.split('/')[-1].split('.')[0]
+        cloudinary.uploader.destroy(public_id)
+    except Exception as e:
+        print(f"Cloudinary delete failed: {e}")
     
     # Veritabanından sil
     db.session.delete(image)
