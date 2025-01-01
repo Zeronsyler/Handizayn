@@ -22,7 +22,7 @@ db = SQLAlchemy(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
-# Models
+# Veritabanı modellerini tanımla
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
@@ -314,6 +314,24 @@ def slugify(text):
     text = '-'.join(text.split())
     return text
 
+def create_tables():
+    with app.app_context():
+        db.create_all()
+        # Admin kullanıcısını oluştur
+        if not User.query.filter_by(username='admin').first():
+            admin = User(username='admin')
+            admin.password_hash = generate_password_hash('admin123')
+            db.session.add(admin)
+            db.session.commit()
+        
+        # Varsayılan kategorileri oluştur
+        if not Category.query.first():
+            categories = ['Modern', 'Klasik', 'Vintage']
+            for cat_name in categories:
+                category = Category(name=cat_name)
+                db.session.add(category)
+            db.session.commit()
+
 def init_default_images():
     # Hero görseli
     if not Image.query.filter_by(section='hero').first():
@@ -333,16 +351,6 @@ def init_default_images():
 
     db.session.commit()
 
-def init_default_categories():
-    default_categories = ['Modern', 'Geleneksel', 'Vintage', 'Özel Tasarım']
-    
-    for category_name in default_categories:
-        if not Category.query.filter_by(name=category_name).first():
-            category = Category(name=category_name)
-            db.session.add(category)
-    
-    db.session.commit()
-
 def init_admin_user():
     if not User.query.filter_by(username='admin').first():
         admin = User(username='admin')
@@ -350,13 +358,11 @@ def init_admin_user():
         db.session.add(admin)
         db.session.commit()
 
+create_tables()
+
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-        init_admin_user()
-        init_default_categories()
-        init_default_images()
-    
+    init_default_images()
+    init_admin_user()
     port = int(os.environ.get('PORT', 5004))
     if os.environ.get('FLASK_ENV') == 'production':
         app.run(host='0.0.0.0', port=port)
