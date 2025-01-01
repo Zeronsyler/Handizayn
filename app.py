@@ -346,12 +346,13 @@ def init_admin_user():
 
 if __name__ == '__main__':
     with app.app_context():
-        db.create_all()  # Veritabanını oluştur
-        init_admin_user()  # Admin kullanıcısını ekle
-        init_default_categories()  # Varsayılan kategorileri ekle
-        init_default_images()  # Varsayılan görselleri ekle
+        db.create_all()
+        init_admin_user()
+        init_default_categories()
+        init_default_images()
     
+    port = int(os.environ.get('PORT', 5004))
     if os.environ.get('FLASK_ENV') == 'production':
-        app.run()
+        app.run(host='0.0.0.0', port=port)
     else:
-        app.run(debug=True, port=5004)
+        app.run(debug=True, port=port)
