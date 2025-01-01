@@ -202,8 +202,9 @@ def edit_product(id):
     
     return redirect(url_for('admin'))
 
-@app.route('/admin/delete_image/<int:id>')
-def delete_image(id):
+@app.route('/admin/delete_product_image/<int:id>')
+@login_required
+def delete_product_image(id):
     image = ProductImage.query.get_or_404(id)
     
     # Cloudinary'den sil
@@ -212,6 +213,26 @@ def delete_image(id):
         cloudinary.uploader.destroy(public_id)
     except Exception as e:
         print(f"Cloudinary delete failed: {e}")
+    
+    # Veritabanından sil
+    db.session.delete(image)
+    db.session.commit()
+    
+    flash('Resim başarıyla silindi!', 'success')
+    return redirect(url_for('admin'))
+
+@app.route('/admin/delete_section_image/<int:id>')
+@login_required
+def delete_section_image(id):
+    image = Image.query.get_or_404(id)
+    
+    try:
+        # Dosyayı sil
+        file_path = os.path.join(app.root_path, 'static', image.path)
+        if os.path.exists(file_path):
+            os.remove(file_path)
+    except Exception as e:
+        print(f"Error deleting file: {e}")
     
     # Veritabanından sil
     db.session.delete(image)
@@ -278,44 +299,16 @@ def delete_product(id):
     flash('Ürün başarıyla silindi')
     return redirect(url_for('admin'))
 
-@app.route('/delete_product_image/<int:id>')
+@app.route('/delete_category/<int:id>')
 @login_required
-def delete_product_image(id):
-    image = ProductImage.query.get_or_404(id)
-    product = image.product
-    
-    # Görseli diskten sil
-    file_path = os.path.join(app.root_path, 'static', image.path)
-    if os.path.exists(file_path):
-        os.remove(file_path)
-    
-    # Eğer silinen görsel ana görsel ise ve başka görseller varsa, ilk görseli ana görsel yap
-    if image.is_primary and product.images:
-        next_image = next((img for img in product.images if img.id != image.id), None)
-        if next_image:
-            next_image.is_primary = True
-    
-    db.session.delete(image)
-    db.session.commit()
-    
-    flash('Görsel başarıyla silindi')
-    return redirect(url_for('admin'))
-
-@app.route('/delete_image/<section>')
-@login_required
-def delete_image(section):
-    image = Image.query.filter_by(section=section).first()
-    if image:
-        # Görseli dosya sisteminden sil
-        image_path = os.path.join(app.root_path, 'static', image.path)
-        if os.path.exists(image_path):
-            os.remove(image_path)
-        
-        # Veritabanından sil
-        db.session.delete(image)
+def delete_category(id):
+    category = Category.query.get_or_404(id)
+    if Product.query.filter_by(category_id=id).first():
+        flash('Bu kategoriye ait ürünler var. Önce ürünleri silmelisiniz.')
+    else:
+        db.session.delete(category)
         db.session.commit()
-        flash(f'{section.title()} görseli başarıyla silindi')
-    
+        flash('Kategori başarıyla silindi')
     return redirect(url_for('admin'))
 
 @app.route('/add_category', methods=['POST'])
@@ -330,18 +323,6 @@ def add_category():
             flash('Kategori başarıyla eklendi')
         else:
             flash('Bu kategori zaten mevcut')
-    return redirect(url_for('admin'))
-
-@app.route('/delete_category/<int:id>')
-@login_required
-def delete_category(id):
-    category = Category.query.get_or_404(id)
-    if Product.query.filter_by(category_id=id).first():
-        flash('Bu kategoriye ait ürünler var. Önce ürünleri silmelisiniz.')
-    else:
-        db.session.delete(category)
-        db.session.commit()
-        flash('Kategori başarıyla silindi')
     return redirect(url_for('admin'))
 
 def slugify(text):

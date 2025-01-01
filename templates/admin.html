@@ -10,20 +10,26 @@
             <h3>Görsel Yönetimi</h3>
         </div>
         <div class="card-body">
-            <form action="{{ url_for('upload_image') }}" method="post" enctype="multipart/form-data">
-                <div class="mb-3">
-                    <label for="section" class="form-label">Bölüm Seçin</label>
-                    <select class="form-select" name="section" required>
-                        <option value="hero">Ana Sayfa Hero</option>
-                        <option value="about">Hakkımızda</option>
-                    </select>
+            {% for section, image in images.items() %}
+            <div class="col-md-4 mb-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ section|title }} Görseli</h5>
+                        {% if image %}
+                        <img src="{{ url_for('static', filename=image.path) }}" class="img-fluid mb-2" alt="{{ section }}">
+                        <a href="{{ url_for('delete_section_image', id=image.id) }}" class="btn btn-danger">Görseli Sil</a>
+                        {% endif %}
+                        <form action="{{ url_for('upload_image') }}" method="post" enctype="multipart/form-data" class="mt-2">
+                            <input type="hidden" name="section" value="{{ section }}">
+                            <div class="mb-3">
+                                <input type="file" class="form-control" name="image" accept="image/*" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Yükle</button>
+                        </form>
+                    </div>
                 </div>
-                <div class="mb-3">
-                    <label for="image" class="form-label">Görsel Seçin</label>
-                    <input type="file" class="form-control" name="image" accept="image/*" required>
-                </div>
-                <button type="submit" class="btn btn-primary">Görseli Yükle</button>
-            </form>
+            </div>
+            {% endfor %}
         </div>
     </div>
 
@@ -167,28 +173,16 @@
                                 {% endfor %}
                             </select>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Mevcut Görseller</label>
-                            <div class="row g-2 mb-2">
-                                {% for image in product.images %}
-                                <div class="col-4">
-                                    <img src="{{ url_for('static', filename=image.path) }}" 
-                                         class="img-fluid rounded" 
-                                         alt="{{ product.name }}">
-                                    <div class="text-center mt-1">
-                                        {% if image.is_primary %}
-                                        <span class="badge bg-primary">Ana Görsel</span>
-                                        {% endif %}
-                                        <a href="{{ url_for('delete_product_image', id=image.id) }}" 
-                                           class="btn btn-danger btn-sm"
-                                           onclick="return confirm('Bu görseli silmek istediğinizden emin misiniz?')">
-                                            <i class="fas fa-trash"></i>
-                                        </a>
-                                    </div>
-                                </div>
-                                {% endfor %}
+                        {% if product.images %}
+                        <div class="product-images">
+                            {% for image in product.images %}
+                            <div class="product-image">
+                                <img src="{{ url_for('static', filename=image.path) }}" alt="{{ product.name }}" class="img-thumbnail">
+                                <a href="{{ url_for('delete_product_image', id=image.id) }}" class="btn btn-danger btn-sm mt-2">Resmi Sil</a>
                             </div>
+                            {% endfor %}
                         </div>
+                        {% endif %}
                         <div class="mb-3">
                             <label class="form-label">Yeni Görseller Ekle</label>
                             <input type="file" class="form-control" name="images" multiple accept="image/*">
