@@ -125,46 +125,60 @@ def logout():
 @app.route('/admin')
 @login_required
 def admin():
-    images = Image.query.all()
     products = Product.query.all()
     categories = Category.query.all()
-    return render_template('admin.html', images=images, products=products, categories=categories)
+    
+    # Bölüm görsellerini getir
+    section_images = {}
+    for section in ['hero', 'about']:
+        image = Image.query.filter_by(section=section).first()
+        section_images[section] = image
+    
+    return render_template('admin.html', 
+                         products=products, 
+                         categories=categories,
+                         images=section_images)
 
 @app.route('/admin/add_product', methods=['POST'])
+@login_required
 def add_product():
-    if request.method == 'POST':
+    try:
         name = request.form['name']
         description = request.form['description']
         category_id = request.form['category']
+        files = request.files.getlist('images')
         
         # Ürünü oluştur
-        product = Product(name=name, description=description, category_id=category_id)
+        product = Product(
+            name=name,
+            description=description,
+            category_id=category_id
+        )
         db.session.add(product)
         db.session.commit()
         
         # Resimleri yükle
-        files = request.files.getlist('images')
         for i, file in enumerate(files):
             if file and allowed_file(file.filename):
-                # Cloudinary'ye yükle
                 try:
                     result = cloudinary.uploader.upload(file)
+                    
+                    # Veritabanına kaydet
+                    image = ProductImage(
+                        path=result['url'],
+                        product_id=product.id,
+                        is_primary=(i == 0)  # İlk resim ana resim olsun
+                    )
+                    db.session.add(image)
                 except Exception as e:
                     print(f"Cloudinary upload failed: {e}")
                     continue
-                
-                # Veritabanına kaydet
-                image = ProductImage(
-                    filename=file.filename,
-                    path=result['secure_url'],
-                    is_primary=(i == 0),  # İlk resim primary olsun
-                    product_id=product.id
-                )
-                db.session.add(image)
         
         db.session.commit()
         flash('Ürün başarıyla eklendi!', 'success')
-        return redirect(url_for('admin'))
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Ürün eklenirken bir hata oluştu: {str(e)}', 'error')
     
     return redirect(url_for('admin'))
 
