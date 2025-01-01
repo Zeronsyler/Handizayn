@@ -3,12 +3,29 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
 import os
 from flask import Markup
 import markdown
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-here')
+
+# Cloudinary yapılandırması
+cloudinary.config(
+    cloud_name='dy46noypm',
+    api_key='264772451632922',
+    api_secret='V29jE3GG-OftNLbdxv05-MJlbrA'
+)
+
+# Desteklenen resim formatları
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # Veritabanı yapılandırması
 if os.environ.get('FLASK_ENV') == 'production':
@@ -108,6 +125,85 @@ def admin():
     categories = Category.query.all()
     return render_template('admin.html', images=images, products=products, categories=categories)
 
+@app.route('/admin/add_product', methods=['POST'])
+def add_product():
+    if request.method == 'POST':
+        name = request.form['name']
+        description = request.form['description']
+        category_id = request.form['category']
+        
+        # Ürünü oluştur
+        product = Product(name=name, description=description, category_id=category_id)
+        db.session.add(product)
+        db.session.commit()
+        
+        # Resimleri yükle
+        files = request.files.getlist('images')
+        for i, file in enumerate(files):
+            if file and allowed_file(file.filename):
+                # Cloudinary'ye yükle
+                result = cloudinary.uploader.upload(file)
+                
+                # Veritabanına kaydet
+                image = ProductImage(
+                    filename=file.filename,
+                    path=result['secure_url'],
+                    is_primary=(i == 0),  # İlk resim primary olsun
+                    product_id=product.id
+                )
+                db.session.add(image)
+        
+        db.session.commit()
+        flash('Ürün başarıyla eklendi!', 'success')
+        return redirect(url_for('admin'))
+    
+    return redirect(url_for('admin'))
+
+@app.route('/admin/edit_product/<int:id>', methods=['POST'])
+def edit_product(id):
+    product = Product.query.get_or_404(id)
+    
+    if request.method == 'POST':
+        product.name = request.form['name']
+        product.description = request.form['description']
+        product.category_id = request.form['category']
+        
+        # Yeni resimleri yükle
+        files = request.files.getlist('images')
+        for file in files:
+            if file and allowed_file(file.filename):
+                # Cloudinary'ye yükle
+                result = cloudinary.uploader.upload(file)
+                
+                # Veritabanına kaydet
+                image = ProductImage(
+                    filename=file.filename,
+                    path=result['secure_url'],
+                    product_id=product.id
+                )
+                db.session.add(image)
+        
+        db.session.commit()
+        flash('Ürün başarıyla güncellendi!', 'success')
+        return redirect(url_for('admin'))
+    
+    return redirect(url_for('admin'))
+
+@app.route('/admin/delete_image/<int:id>')
+def delete_image(id):
+    image = ProductImage.query.get_or_404(id)
+    
+    # Cloudinary'den sil
+    public_id = image.path.split('/')[-1].split('.')[0]
+    cloudinary.uploader.destroy(public_id)
+    
+    # Veritabanından sil
+    db.session.delete(image)
+    db.session.commit()
+    
+    flash('Resim başarıyla silindi!', 'success')
+    return redirect(url_for('admin'))
+
 @app.route('/upload_image', methods=['POST'])
 @login_required
 def upload_image():
@@ -148,82 +244,6 @@ def upload_image():
         db.session.commit()
         flash('Görsel başarıyla yüklendi')
     
-    return redirect(url_for('admin'))
-
-@app.route('/add_product', methods=['POST'])
-@login_required
-def add_product():
-    name = request.form.get('name')
-    description = request.form.get('description')
-    category_id = request.form.get('category_id')
-    files = request.files.getlist('images')
-    
-    if not name or not category_id or not files:
-        flash('Tüm alanları doldurun')
-        return redirect(url_for('admin'))
-    
-    product = Product(
-        name=name,
-        description=description,
-        category_id=category_id
-    )
-    db.session.add(product)
-    
-    # Görselleri kaydet
-    for i, file in enumerate(files):
-        if file:
-            filename = secure_filename(file.filename)
-            products_folder = os.path.join(app.root_path, 'static', 'images', 'products')
-            
-            if not os.path.exists(products_folder):
-                os.makedirs(products_folder)
-                
-            file_path = os.path.join(products_folder, filename)
-            file.save(file_path)
-            
-            product_image = ProductImage(
-                filename=filename,
-                path=os.path.join('images', 'products', filename),
-                is_primary=(i == 0),  # İlk görsel ana görsel olsun
-                product=product
-            )
-            db.session.add(product_image)
-    
-    db.session.commit()
-    flash('Ürün başarıyla eklendi')
-    return redirect(url_for('admin'))
-
-@app.route('/edit_product/<int:id>', methods=['POST'])
-@login_required
-def edit_product(id):
-    product = Product.query.get_or_404(id)
-    
-    product.name = request.form.get('name')
-    product.description = request.form.get('description')
-    product.category_id = request.form.get('category_id')
-    
-    files = request.files.getlist('images')
-    if files and files[0].filename != '':
-        for i, file in enumerate(files):
-            filename = secure_filename(file.filename)
-            products_folder = os.path.join(app.root_path, 'static', 'images', 'products')
-            
-            if not os.path.exists(products_folder):
-                os.makedirs(products_folder)
-                
-            file_path = os.path.join(products_folder, filename)
-            file.save(file_path)
-            
-            product_image = ProductImage(
-                filename=filename,
-                path=os.path.join('images', 'products', filename),
-                is_primary=(i == 0 and not product.images),  # Eğer hiç görsel yoksa ilk görsel ana görsel olsun
-                product=product
-            )
-            db.session.add(product_image)
-    
-    db.session.commit()
-    flash('Ürün başarıyla güncellendi')
     return redirect(url_for('admin'))
 
 @app.route('/delete_product/<int:id>')
@@ -326,7 +346,7 @@ def create_tables():
         
         # Varsayılan kategorileri oluştur
         if not Category.query.first():
-            categories = ['Modern', 'Klasik', 'Vintage']
+            categories = ['Modern', 'Klasik', 'Vintage', 'El Dokuma', 'Özel Tasarım']
             for cat_name in categories:
                 category = Category(name=cat_name)
                 db.session.add(category)
