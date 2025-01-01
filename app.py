@@ -33,8 +33,8 @@ def allowed_file(filename):
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # Veritabanı yapılandırması
-if os.environ.get('FLASK_ENV') == 'production':
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', '').replace('postgres://', 'postgresql://')
+if os.environ.get('DATABASE_URL'):
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL').replace('postgres://', 'postgresql://')
 else:
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
 
@@ -43,6 +43,13 @@ app.config['UPLOAD_FOLDER'] = os.path.join('static', 'images')
 db = SQLAlchemy(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
+
+# Veritabanını sıfırla ve yeniden oluştur (sadece development modunda)
+if os.environ.get('FLASK_ENV') == 'development':
+    with app.app_context():
+        db.drop_all()
+        db.create_all()
+        print("Veritabanı sıfırlandı ve yeniden oluşturuldu!")
 
 # Veritabanı modellerini tanımla
 class User(UserMixin, db.Model):
@@ -415,8 +422,6 @@ def init_admin_user():
         admin.password_hash = generate_password_hash('admin123')
         db.session.add(admin)
         db.session.commit()
-
-create_tables()
 
 if __name__ == '__main__':
     init_default_images()
