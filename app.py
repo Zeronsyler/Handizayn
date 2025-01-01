@@ -161,11 +161,12 @@ def add_product():
         for i, file in enumerate(files):
             if file and allowed_file(file.filename):
                 try:
+                    # Cloudinary'ye yükle
                     result = cloudinary.uploader.upload(file)
                     
                     # Veritabanına kaydet
                     image = ProductImage(
-                        path=result['url'],
+                        path=result['secure_url'],  # secure_url kullan
                         product_id=product.id,
                         is_primary=(i == 0)  # İlk resim ana resim olsun
                     )
@@ -337,6 +338,23 @@ def add_category():
             flash('Kategori başarıyla eklendi')
         else:
             flash('Bu kategori zaten mevcut')
+    return redirect(url_for('admin'))
+
+@app.route('/admin/make_primary/<int:product_id>/<int:image_id>')
+@login_required
+def make_primary_image(product_id, image_id):
+    product = Product.query.get_or_404(product_id)
+    
+    # Önce tüm resimlerin primary özelliğini false yap
+    for image in product.images:
+        image.is_primary = False
+    
+    # Seçilen resmi primary yap
+    image = ProductImage.query.get_or_404(image_id)
+    image.is_primary = True
+    
+    db.session.commit()
+    flash('Ana görsel başarıyla güncellendi!', 'success')
     return redirect(url_for('admin'))
 
 def slugify(text):
