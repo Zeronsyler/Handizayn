@@ -175,12 +175,12 @@ def add_product():
                 try:
                     print(f"Uploading file: {file.filename}")
                     # Cloudinary'ye yükle
-                    result = cloudinary.uploader.upload(file)
-                    print(f"Cloudinary result: {result}")
+                    upload_result = cloudinary.uploader.upload(file)
+                    print(f"Cloudinary result: {upload_result}")
                     
                     # Veritabanına kaydet
                     image = ProductImage(
-                        path=result['secure_url'],
+                        path=upload_result['secure_url'],
                         product_id=product.id,
                         is_primary=(i == 0)
                     )

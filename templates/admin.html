@@ -133,7 +133,7 @@
                                 <div class="product-images">
                                     {% for image in product.images %}
                                     <div class="product-image d-inline-block me-2">
-                                        <img src="{{ url_for('static', filename=image.path) }}" alt="{{ product.name }}" style="height: 50px; width: 50px; object-fit: cover;">
+                                        <img src="{{ image.path }}" alt="{{ product.name }}" style="height: 50px; width: 50px; object-fit: cover;">
                                         <div class="mt-1">
                                             <a href="{{ url_for('delete_product_image', id=image.id) }}" 
                                                class="btn btn-danger btn-sm"
