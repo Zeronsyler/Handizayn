@@ -58,8 +58,8 @@ class User(UserMixin, db.Model):
 
 class Category(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(200), unique=True, nullable=False)
-    products = db.relationship('Product', back_populates='category', lazy=True)
+    name = db.Column(db.String(100), nullable=False)
+    products = db.relationship('Product', backref='category', lazy=True)
 
     def __repr__(self):
         return f'<Category {self.name}>'
@@ -69,33 +69,27 @@ class Product(db.Model):
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
     category_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=False)
-    category = db.relationship('Category', back_populates='products', lazy=True)
-    images = db.relationship('ProductImage', back_populates='product', lazy=True, cascade="all, delete-orphan")
-
+    images = db.relationship('Image', backref='product', lazy=True)
+    
     def primary_image(self):
-        primary = next((img for img in self.images if img.is_primary), None)
-        if primary is None and self.images:
-            primary = self.images[0]
+        primary = Image.query.filter_by(product_id=self.id, is_primary=True).first()
+        if not primary:
+            primary = Image.query.filter_by(product_id=self.id).first()
         return primary
 
     def __repr__(self):
         return f'<Product {self.name}>'
 
-class ProductImage(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    filename = db.Column(db.String(500))  
-    path = db.Column(db.String(500), nullable=False)
-    is_primary = db.Column(db.Boolean, default=False)
-    product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=False)
-    product = db.relationship('Product', back_populates='images')
-
-    def __repr__(self):
-        return f'<ProductImage {self.path}>'
-
 class Image(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    section = db.Column(db.String(50), nullable=False)
-    path = db.Column(db.String(200), nullable=False)
+    filename = db.Column(db.String(500))
+    path = db.Column(db.String(500), nullable=False)
+    section = db.Column(db.String(50))  # hero, about, product
+    is_primary = db.Column(db.Boolean, default=False)
+    product_id = db.Column(db.Integer, db.ForeignKey('product.id'))
+
+    def __repr__(self):
+        return f'<Image {self.path}>'
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -104,13 +98,13 @@ def load_user(user_id):
 # Routes
 @app.route('/')
 def index():
-    categories = Category.query.all()
-    hero_image = Image.query.filter_by(section='slider').first()  # 'hero' yerine 'slider' kullanıyoruz
+    hero_image = Image.query.filter_by(section='hero').first()
     about_image = Image.query.filter_by(section='about').first()
+    categories = Category.query.all()
     return render_template('index.html', 
-                         categories=categories,
-                         hero_image=hero_image,
-                         about_image=about_image)
+                         hero_image=hero_image, 
+                         about_image=about_image,
+                         categories=categories)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -185,10 +179,9 @@ def add_product():
                     upload_result = cloudinary.uploader.upload(file)
                     
                     # Ürün görselini oluştur
-                    product_image = ProductImage(
-                        filename=file.filename,  # Orijinal dosya adını kaydet
+                    product_image = Image(
+                        filename=file.filename,
                         path=upload_result['secure_url'],
-                        is_primary=is_first,
                         product_id=product.id
                     )
                     db.session.add(product_image)
@@ -227,7 +220,8 @@ def edit_product(id):
                     continue
                 
                 # Veritabanına kaydet
-                image = ProductImage(
+                image = Image(
+                    filename=file.filename,
                     path=result['secure_url'],
                     product_id=product.id
                 )
@@ -242,7 +236,7 @@ def edit_product(id):
 @app.route('/admin/delete_product_image/<int:id>')
 @login_required
 def delete_product_image(id):
-    image = ProductImage.query.get_or_404(id)
+    image = Image.query.get_or_404(id)
     
     # Cloudinary'den sil
     try:
@@ -303,7 +297,11 @@ def upload_image():
                 if image:
                     image.path = upload_result['secure_url']
                 else:
-                    image = Image(section=section, path=upload_result['secure_url'])
+                    image = Image(
+                        filename=file.filename,
+                        section=section, 
+                        path=upload_result['secure_url']
+                    )
                     db.session.add(image)
                 
                 db.session.commit()
@@ -372,7 +370,7 @@ def make_primary_image(product_id, image_id):
         image.is_primary = False
     
     # Seçilen resmi primary yap
-    image = ProductImage.query.get_or_404(image_id)
+    image = Image.query.get_or_404(image_id)
     image.is_primary = True
     
     db.session.commit()
