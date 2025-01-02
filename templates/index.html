@@ -2,18 +2,20 @@
 
 {% block content %}
 <!-- Hero Section -->
-<section class="hero-section">
-    {% if hero_image %}
-    <div class="hero-image" style="background-image: url('{{ hero_image.path }}');">
-    {% else %}
-    <div class="hero-image" style="background-image: url('{{ url_for('static', filename='img/default-hero.jpg') }}');">
-    {% endif %}
-        <div class="hero-content" data-aos="fade-up">
-            <h1>Handizayn</h1>
-            <p>El yapımı halılar ve kilimler</p>
-            <div class="hero-buttons">
-                <a href="#categories" class="btn btn-primary">Koleksiyonumuzu Keşfedin</a>
-                <a href="#about" class="btn btn-secondary">Hakkımızda</a>
+<section id="home" class="hero">
+    <div class="hero-slider">
+        {% if hero_image %}
+        <div class="slide" style="background-image: url('{{ hero_image.path }}');">
+        {% else %}
+        <div class="slide" style="background-image: url('{{ url_for('static', filename='img/default-hero.jpg') }}');">
+        {% endif %}
+            <div class="hero-content">
+                <h1 data-aos="fade-up">HAN DİZAYN</h1>
+                <p data-aos="fade-up" data-aos-delay="200">Geleneksel El Sanatının Modern Yorumu</p>
+                <div data-aos="fade-up" data-aos-delay="400">
+                    <a href="#categories" class="btn btn-primary btn-lg" style="color: white;">Koleksiyonumuzu Keşfedin</a>
+                    <a href="#about" class="btn btn-outline-light btn-lg ms-3">Hakkımızda</a>
+                </div>
             </div>
         </div>
     </div>
