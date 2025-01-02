@@ -84,7 +84,6 @@ class Product(db.Model):
 
 class ProductImage(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    filename = db.Column(db.String(500))  
     path = db.Column(db.String(500), nullable=False)
     is_primary = db.Column(db.Boolean, default=False)
     product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=False)
@@ -159,52 +158,87 @@ def admin():
         app.logger.error(f"Admin sayfasında hata: {str(e)}")
         return f"Bir hata oluştu: {str(e)}", 500
 
-@app.route('/admin/add_product', methods=['POST'])
+@app.route('/admin/add_product', methods=['GET', 'POST'])
 @login_required
 def add_product():
-    try:
+    if request.method == 'POST':
         name = request.form.get('name')
         description = request.form.get('description')
         category_id = request.form.get('category')
-        
-        # Ürünü oluştur
-        product = Product(
-            name=name,
-            description=description,
-            category_id=category_id
-        )
-        db.session.add(product)
-        db.session.flush()  # ID'yi almak için flush yapıyoruz
-        
-        # Görselleri işle
         files = request.files.getlist('images')
-        is_first = True
-        for file in files:
-            if file and allowed_file(file.filename):
-                try:
+        
+        if name and category_id:
+            try:
+                # Ürünü oluştur
+                product = Product(
+                    name=name,
+                    description=description,
+                    category_id=category_id
+                )
+                db.session.add(product)
+                db.session.commit()
+                
+                # Görselleri kaydet
+                is_first = True  # İlk resmi primary olarak işaretle
+                for file in files:
+                    if file.filename == '':
+                        continue
+                        
                     # Cloudinary'ye yükle
                     upload_result = cloudinary.uploader.upload(file)
                     
                     # Ürün görselini oluştur
                     product_image = ProductImage(
-                        filename=file.filename,
                         path=upload_result['secure_url'],
+                        is_primary=is_first,
                         product_id=product.id
                     )
                     db.session.add(product_image)
                     is_first = False
-                except Exception as e:
-                    app.logger.error(f"Görsel yükleme hatası: {str(e)}")
-                    raise
+                
+                db.session.commit()
+                flash('Ürün başarıyla eklendi!', 'success')
+                return redirect(url_for('admin_products'))
+            except Exception as e:
+                db.session.rollback()
+                flash(f'Ürün eklenirken bir hata oluştu: {str(e)}', 'error')
+        else:
+            flash('Lütfen gerekli alanları doldurun!', 'error')
+    
+    categories = Category.query.all()
+    return render_template('admin/add_product.html', categories=categories)
+
+@app.route('/admin/add_images/<int:product_id>', methods=['POST'])
+@login_required
+def add_images(product_id):
+    if 'images' not in request.files:
+        flash('Dosya seçilmedi', 'error')
+        return redirect(url_for('edit_product', id=product_id))
+    
+    files = request.files.getlist('images')
+    
+    try:
+        for file in files:
+            if file.filename == '':
+                continue
+            
+            # Cloudinary'ye yükle
+            result = cloudinary.uploader.upload(file)
+            
+            # Veritabanına kaydet
+            image = ProductImage(
+                path=result['secure_url'],
+                product_id=product_id
+            )
+            db.session.add(image)
         
         db.session.commit()
-        flash('Ürün başarıyla eklendi.', 'success')
+        flash('Görseller başarıyla yüklendi!', 'success')
     except Exception as e:
         db.session.rollback()
-        app.logger.error(f"Ürün ekleme hatası: {str(e)}")
-        flash(f'Ürün eklenirken bir hata oluştu: {str(e)}', 'error')
+        flash(f'Görsel yüklenirken bir hata oluştu: {str(e)}', 'error')
     
-    return redirect(url_for('admin'))
+    return redirect(url_for('edit_product', id=product_id))
 
 @app.route('/admin/edit_product/<int:id>', methods=['POST'])
 def edit_product(id):
@@ -228,7 +262,6 @@ def edit_product(id):
                 
                 # Veritabanına kaydet
                 image = ProductImage(
-                    filename=file.filename,
                     path=result['secure_url'],
                     product_id=product.id
                 )
