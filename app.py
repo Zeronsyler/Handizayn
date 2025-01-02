@@ -488,14 +488,19 @@ def init_db():
             db.session.commit()
             
             # Slug kolonunu ekle
-            add_slug_column()
+            try:
+                add_slug_column()
+            except Exception as e:
+                print(f"Slug kolonu zaten var olabilir: {str(e)}")
             
         except Exception as e:
             db.session.rollback()
             print(f"Veritabanı başlatma hatası: {str(e)}")
             raise
 
+# Veritabanını başlat
+init_db()
+
 if __name__ == '__main__':
-    init_db()
     port = int(os.environ.get('PORT', 5004))
     app.run(host='0.0.0.0', port=port)
