@@ -13,6 +13,7 @@ import os
 import markdown
 from datetime import datetime
 import logging
+from sqlalchemy import text
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-here')
@@ -425,16 +426,54 @@ def slugify(text):
     text = '-'.join(text.split())
     return text
 
+def add_slug_column():
+    with app.app_context():
+        try:
+            # Mevcut tabloyu yedekle
+            db.session.execute(text('CREATE TABLE category_backup AS SELECT * FROM category;'))
+            
+            # Eski tabloyu sil
+            db.session.execute(text('DROP TABLE category CASCADE;'))
+            
+            # Yeni tabloyu oluştur
+            db.session.execute(text('''
+                CREATE TABLE category (
+                    id SERIAL PRIMARY KEY,
+                    name VARCHAR(200) NOT NULL UNIQUE,
+                    slug VARCHAR(200) NOT NULL UNIQUE
+                );
+            '''))
+            
+            # Verileri geri yükle ve slug'ları oluştur
+            result = db.session.execute(text('SELECT id, name FROM category_backup;'))
+            for row in result:
+                slug = slugify(row[1])  # row[1] is name
+                db.session.execute(
+                    text('INSERT INTO category (id, name, slug) VALUES (:id, :name, :slug)'),
+                    {'id': row[0], 'name': row[1], 'slug': slug}
+                )
+            
+            # Sequence'i düzelt
+            db.session.execute(text("SELECT setval('category_id_seq', (SELECT MAX(id) FROM category));"))
+            
+            # Yedek tabloyu sil
+            db.session.execute(text('DROP TABLE category_backup;'))
+            
+            db.session.commit()
+            print("Migration başarıyla tamamlandı!")
+            
+        except Exception as e:
+            db.session.rollback()
+            print(f"Migration hatası: {str(e)}")
+            raise
+
 def init_db():
     with app.app_context():
         try:
-            # Mevcut tabloları sil
-            db.drop_all()
-            
-            # Yeni tabloları oluştur
+            # Tabloları oluştur
             db.create_all()
             
-            # Admin kullanıcısını oluştur
+            # Admin kullanıcısını kontrol et ve oluştur
             if not User.query.filter_by(username='admin').first():
                 admin = User(username='admin')
                 admin.set_password('admin123')
@@ -447,14 +486,16 @@ def init_db():
                 db.session.add(default_category)
             
             db.session.commit()
-            print("Veritabanı başarıyla oluşturuldu!")
+            
+            # Slug kolonunu ekle
+            add_slug_column()
             
         except Exception as e:
             db.session.rollback()
-            print(f"Veritabanı oluşturulurken hata: {str(e)}")
+            print(f"Veritabanı başlatma hatası: {str(e)}")
+            raise
 
 if __name__ == '__main__':
-    init_db()  # Veritabanını yeniden oluştur
-    
+    init_db()
     port = int(os.environ.get('PORT', 5004))
     app.run(host='0.0.0.0', port=port)
