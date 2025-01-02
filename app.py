@@ -136,11 +136,23 @@ def admin():
     try:
         categories = Category.query.all()
         products = Product.query.all()
-        images = Image.query.all()  # Tüm section görsellerini al
+        
+        # Görselleri section'lara göre grupla
+        images_dict = {}
+        all_images = Image.query.all()
+        for image in all_images:
+            images_dict[image.section] = image
+            
+        # Eğer bazı section'lar için görsel yoksa, None değeri ata
+        required_sections = ['slider', 'about', 'contact']  # Gerekli section'lar
+        for section in required_sections:
+            if section not in images_dict:
+                images_dict[section] = None
+        
         return render_template('admin.html', 
                              categories=categories,
                              products=products,
-                             images=images)
+                             images=images_dict)
     except Exception as e:
         app.logger.error(f"Admin sayfasında hata: {str(e)}")
         return f"Bir hata oluştu: {str(e)}", 500
