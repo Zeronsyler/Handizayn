@@ -57,30 +57,6 @@ class User(UserMixin, db.Model):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
-class Category(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    products = db.relationship('Product', backref='category', lazy=True)
-
-    def __repr__(self):
-        return f'<Category {self.name}>'
-
-class Product(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.Text)
-    category_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=False)
-    images = db.relationship('Image', backref='product', lazy=True, cascade="all, delete-orphan")
-    
-    def primary_image(self):
-        primary = Image.query.filter_by(product_id=self.id, is_primary=True).first()
-        if not primary:
-            primary = Image.query.filter_by(product_id=self.id).first()
-        return primary
-
-    def __repr__(self):
-        return f'<Product {self.name}>'
-
 class Image(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     filename = db.Column(db.String(500))
@@ -92,6 +68,28 @@ class Image(db.Model):
 
     def __repr__(self):
         return f'<Image {self.filename}>'
+
+class Product(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text)
+    category_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=False)
+    images = db.relationship('Image', backref='product', lazy=True, cascade="all, delete-orphan")
+    
+    def primary_image(self):
+        return Image.query.filter_by(product_id=self.id, is_primary=True).first() or \
+               Image.query.filter_by(product_id=self.id).first()
+
+    def __repr__(self):
+        return f'<Product {self.name}>'
+
+class Category(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    products = db.relationship('Product', backref='category', lazy=True)
+
+    def __repr__(self):
+        return f'<Category {self.name}>'
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -392,17 +390,23 @@ def slugify(text):
 
 def init_db():
     with app.app_context():
-        # Drop all tables
         db.drop_all()
-        # Create all tables
         db.create_all()
-        # Create admin user if not exists
+        
+        # Create admin user
         if not User.query.filter_by(username='admin').first():
             admin = User(username='admin')
-            admin.set_password('password')  # Change this to your desired password
+            admin.set_password('password')
             db.session.add(admin)
+            
+            # Create default categories
+            modern = Category(name='Modern')
+            classic = Category(name='Klasik')
+            db.session.add(modern)
+            db.session.add(classic)
+            
             db.session.commit()
-            print("Admin user created successfully!")
+            print("Database initialized successfully!")
 
 if __name__ == '__main__':
     init_db()  # Initialize database before running the app
