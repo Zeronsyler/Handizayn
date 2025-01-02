@@ -369,16 +369,24 @@ def delete_product(id):
     flash('Ürün başarıyla silindi')
     return redirect(url_for('admin'))
 
-@app.route('/delete_category/<int:id>')
+@app.route('/admin/category/<int:id>/delete', methods=['POST'])
 @login_required
 def delete_category(id):
-    category = Category.query.get_or_404(id)
-    if Product.query.filter_by(category_id=id).first():
-        flash('Bu kategoriye ait ürünler var. Önce ürünleri silmelisiniz.')
-    else:
+    try:
+        category = Category.query.get_or_404(id)
+        
+        # Kategoriye ait ürünleri kontrol et
+        if category.products:
+            flash('Bu kategoriye ait ürünler var. Önce ürünleri silmelisiniz.', 'error')
+            return redirect(url_for('admin'))
+            
         db.session.delete(category)
         db.session.commit()
-        flash('Kategori başarıyla silindi')
+        flash('Kategori başarıyla silindi', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Kategori silinirken bir hata oluştu: {str(e)}', 'error')
+    
     return redirect(url_for('admin'))
 
 @app.route('/admin/category/add', methods=['POST'])
@@ -397,26 +405,6 @@ def add_category():
     except Exception as e:
         db.session.rollback()
         flash(f'Kategori eklenirken bir hata oluştu: {str(e)}', 'error')
-    
-    return redirect(url_for('admin'))
-
-@app.route('/admin/category/<int:id>/delete', methods=['POST'])
-@login_required
-def delete_category(id):
-    try:
-        category = Category.query.get_or_404(id)
-        
-        # Kategoriye ait ürünleri kontrol et
-        if category.products:
-            flash('Bu kategoriye ait ürünler var. Önce ürünleri silmelisiniz.', 'error')
-            return redirect(url_for('admin'))
-            
-        db.session.delete(category)
-        db.session.commit()
-        flash('Kategori başarıyla silindi', 'success')
-    except Exception as e:
-        db.session.rollback()
-        flash(f'Kategori silinirken bir hata oluştu: {str(e)}', 'error')
     
     return redirect(url_for('admin'))
 
