@@ -78,37 +78,43 @@ h1, h2, h3, h4, h5, h6 {
 .navbar-logo img {
     width: 40px;
     height: 40px;
-    animation: logoSpin 8s linear infinite;
+    animation: floatLogo 3s ease-in-out infinite;
 }
 
-@keyframes logoSpin {
+@keyframes floatLogo {
     0% {
-        transform: rotate(0deg) scale(1);
+        transform: translateY(0) rotate(0);
     }
     25% {
-        transform: rotate(90deg) scale(1.1);
+        transform: translateY(-5px) rotate(5deg);
     }
     50% {
-        transform: rotate(180deg) scale(1);
+        transform: translateY(0) rotate(0);
     }
     75% {
-        transform: rotate(270deg) scale(1.1);
+        transform: translateY(5px) rotate(-5deg);
     }
     100% {
-        transform: rotate(360deg) scale(1);
+        transform: translateY(0) rotate(0);
     }
 }
 
 .navbar-logo:hover img {
-    animation: logoHover 1s ease-in-out infinite;
+    animation: pulseGlow 1.5s ease-in-out infinite;
 }
 
-@keyframes logoHover {
-    0%, 100% {
-        transform: translateY(0) rotate(0);
+@keyframes pulseGlow {
+    0% {
+        transform: scale(1);
+        filter: brightness(1);
     }
     50% {
-        transform: translateY(-5px) rotate(10deg);
+        transform: scale(1.1);
+        filter: brightness(1.2);
+    }
+    100% {
+        transform: scale(1);
+        filter: brightness(1);
     }
 }
 
@@ -433,6 +439,14 @@ section:first-of-type {
     position: relative;
     overflow: hidden;
     aspect-ratio: 3/4;
+    cursor: pointer;
+    overflow: hidden;
+    border-radius: 10px;
+    transition: transform 0.3s ease;
+}
+
+.category-image:hover {
+    transform: translateY(-5px);
 }
 
 .category-image img {
@@ -442,7 +456,7 @@ section:first-of-type {
     transition: transform 0.5s ease;
 }
 
-.category-card:hover .category-image img {
+.category-image:hover img {
     transform: scale(1.1);
 }
 
@@ -470,6 +484,10 @@ section:first-of-type {
 }
 
 /* Image Modal */
+.modal-backdrop {
+    background-color: rgba(0, 0, 0, 0.9);
+}
+
 .modal-dialog.modal-lg {
     max-width: 90%;
     margin: 1.75rem auto;
@@ -478,55 +496,63 @@ section:first-of-type {
 .modal-content {
     background-color: transparent;
     border: none;
+    box-shadow: none;
 }
 
 .modal-header {
-    background-color: rgba(255, 255, 255, 0.9);
-    padding: 1rem 1.5rem;
+    border: none;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
 }
 
 .modal-title {
-    color: var(--primary-color);
+    color: white;
     font-family: 'Cormorant Garamond', serif;
     font-size: 1.5rem;
 }
 
 .modal-body {
-    text-align: center;
+    padding: 0;
+    overflow: hidden;
+    border-radius: 10px;
 }
 
 .modal-body img {
+    width: 100%;
+    height: auto;
     max-height: 80vh;
     object-fit: contain;
+    transform-origin: center;
     transition: transform 0.3s ease-in-out;
 }
 
 .modal-body img.zoom-in {
-    animation: zoomIn 0.3s ease-in-out forwards;
+    animation: modalZoomIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
-@keyframes zoomIn {
+@keyframes modalZoomIn {
     from {
-        transform: scale(0.5);
         opacity: 0;
+        transform: scale(0.8) translateY(50px);
     }
     to {
-        transform: scale(1);
         opacity: 1;
+        transform: scale(1) translateY(0);
     }
 }
 
 .btn-close {
     background-color: white;
-    opacity: 1;
+    opacity: 0.8;
     padding: 0.5rem;
     border-radius: 50%;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
 }
 
 .btn-close:hover {
-    background-color: var(--primary-color);
     opacity: 1;
+    transform: rotate(90deg);
 }
 
 /* About Section */

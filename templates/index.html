@@ -131,30 +131,32 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Get all buttons in hero section
-    const heroButtons = document.querySelectorAll('.hero-content .btn');
-    
-    // Add click event to each button
-    heroButtons.forEach(button => {
-        button.addEventListener('click', function(e) {
-            e.preventDefault();
-            
-            // Get target section id from href
-            const targetId = this.getAttribute('href').substring(1);
-            const targetSection = document.getElementById(targetId);
-            
-            if (targetSection) {
-                // Calculate position
-                const offset = 80; // Navbar height
-                const position = targetSection.offsetTop - offset;
-                
-                // Smooth scroll
-                window.scroll({
-                    top: position,
-                    behavior: 'smooth'
-                });
-            }
+    // Image modal functions
+    const openImageModal = (imagePath, title) => {
+        const modal = new bootstrap.Modal(document.getElementById('imageModal'));
+        const modalImage = document.querySelector('#imageModal img');
+        const modalTitle = document.querySelector('#imageModal .modal-title');
+        
+        modalImage.src = imagePath;
+        modalTitle.textContent = title;
+        
+        modal.show();
+        setTimeout(() => modalImage.classList.add('zoom-in'), 100);
+    };
+
+    // Add click event to category images
+    document.querySelectorAll('.category-image').forEach(image => {
+        image.addEventListener('click', function() {
+            const img = this.querySelector('img');
+            const title = this.querySelector('.category-overlay h3').textContent;
+            openImageModal(img.src, title);
         });
+    });
+
+    // Handle modal events
+    const imageModal = document.getElementById('imageModal');
+    imageModal.addEventListener('hidden.bs.modal', function() {
+        document.querySelector('#imageModal img').classList.remove('zoom-in');
     });
 });
 </script>
