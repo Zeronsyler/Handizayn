@@ -15,7 +15,6 @@
     <nav class="navbar navbar-expand-lg fixed-top">
         <div class="container">
             <a class="navbar-brand" href="/">
-                <img src="{{ url_for('static', filename='images/han-dizayn-logo.png') }}" alt="Han Dizayn Logo" class="brand-logo">
                 HAN DİZAYN
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -44,19 +43,18 @@
 
     {% block content %}
     <!-- Hero Section -->
-    {% if hero_image %}
     <section class="hero">
-        <div class="hero-image" style="background-image: url('{{ hero_image.path }}');"></div>
-        <div class="hero-content">
-            <h1 data-aos="fade-up">HAN DİZAYN</h1>
-            <p data-aos="fade-up" data-aos-delay="200">Geleneksel El Sanatının Modern Yorumu</p>
-            <div data-aos="fade-up" data-aos-delay="400">
-                <a href="#categories" class="btn btn-primary btn-lg">Koleksiyonumuzu Keşfedin</a>
-                <a href="#about" class="btn btn-outline-light btn-lg ms-3">Hakkımızda</a>
+        <div class="hero-image" style="background-image: url('{{ hero_image.path }}');">
+            <div class="hero-content">
+                <h1 data-aos="fade-up">HAN DİZAYN</h1>
+                <p data-aos="fade-up" data-aos-delay="200">Geleneksel El Sanatının Modern Yorumu</p>
+                <div data-aos="fade-up" data-aos-delay="400">
+                    <a href="#categories" class="btn btn-primary btn-lg">Koleksiyonumuzu Keşfedin</a>
+                    <a href="#about" class="btn btn-outline-light btn-lg ms-3">Hakkımızda</a>
+                </div>
             </div>
         </div>
     </section>
-    {% endif %}
 
     <!-- Categories Section -->
     <section id="categories" class="categories-section">
