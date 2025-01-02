@@ -139,16 +139,13 @@ def logout():
 @app.route('/admin')
 @login_required
 def admin():
-    try:
-        products = Product.query.all()
-        categories = Category.query.all()
-        sections = ['hero', 'about']
-        images = {section: Image.query.filter_by(section=section).first() for section in sections}
-        return render_template('admin.html', products=products, categories=categories, images=images)
-    except Exception as e:
-        app.logger.error(f"Admin sayfası hatası: {str(e)}")
-        flash(f'Bir hata oluştu: {str(e)}', 'error')
-        return redirect(url_for('index'))
+    categories = Category.query.all()
+    products = Product.query.all()
+    images = {
+        'hero': Image.query.filter_by(section='hero').first(),
+        'about': Image.query.filter_by(section='about').first()
+    }
+    return render_template('admin.html', categories=categories, products=products, images=images)
 
 @app.route('/admin/add_product', methods=['GET', 'POST'])
 @login_required
@@ -384,36 +381,37 @@ def delete_category(id):
         flash('Kategori başarıyla silindi')
     return redirect(url_for('admin'))
 
-@app.route('/admin/add_category', methods=['POST'])
+@app.route('/admin/category/add', methods=['POST'])
 @login_required
 def add_category():
-    name = request.form.get('name')
-    if name:
-        existing_category = Category.query.filter_by(name=name).first()
-        if not existing_category:
-            category = Category(name=name)
-            db.session.add(category)
-            db.session.commit()
-            flash('Kategori başarıyla eklendi')
-        else:
-            flash('Bu kategori zaten mevcut')
+    try:
+        name = request.form.get('name')
+        if not name:
+            flash('Kategori adı boş olamaz', 'error')
+            return redirect(url_for('admin'))
+            
+        category = Category(name=name)
+        db.session.add(category)
+        db.session.commit()
+        flash('Kategori başarıyla eklendi', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Kategori eklenirken bir hata oluştu: {str(e)}', 'error')
+    
     return redirect(url_for('admin'))
 
-@app.route('/admin/make_primary/<int:product_id>/<int:image_id>')
+@app.route('/admin/category/<int:id>/delete', methods=['POST'])
 @login_required
-def make_primary_image(product_id, image_id):
-    product = Product.query.get_or_404(product_id)
+def delete_category(id):
+    try:
+        category = Category.query.get_or_404(id)
+        db.session.delete(category)
+        db.session.commit()
+        flash('Kategori başarıyla silindi', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Kategori silinirken bir hata oluştu: {str(e)}', 'error')
     
-    # Önce tüm resimlerin primary özelliğini false yap
-    for image in product.images:
-        image.is_primary = False
-    
-    # Seçilen resmi primary yap
-    image = ProductImage.query.get_or_404(image_id)
-    image.is_primary = True
-    
-    db.session.commit()
-    flash('Ana görsel başarıyla güncellendi!', 'success')
     return redirect(url_for('admin'))
 
 @app.route('/categories')
