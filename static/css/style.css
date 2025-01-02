@@ -483,6 +483,27 @@ section:first-of-type {
     opacity: 0.9;
 }
 
+/* Category Title */
+.category-title {
+    font-family: 'Cormorant Garamond', serif;
+    color: var(--primary-color);
+    font-size: 2rem;
+    margin-top: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--primary-color);
+    position: relative;
+}
+
+.category-title::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 100px;
+    height: 2px;
+    background-color: var(--accent-color);
+}
+
 /* Image Modal */
 .modal-backdrop {
     background-color: rgba(0, 0, 0, 0.9);

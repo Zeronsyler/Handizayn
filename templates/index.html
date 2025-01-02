@@ -24,17 +24,24 @@
         </div>
         <div class="row g-4">
             {% for category in categories %}
-            <div class="col-md-4" data-aos="fade-up" data-aos-delay="{{ loop.index * 100 }}">
-                <div class="category-card">
-                    {% if category.products and category.products[0].primary_image() %}
-                    <div class="category-image" onclick="openImageModal('{{ category.products[0].primary_image().path }}', '{{ category.name }}')">
-                        <img src="{{ category.products[0].primary_image().path }}" alt="{{ category.name }}">
-                        <div class="category-overlay">
-                            <h3>{{ category.name }}</h3>
-                            <p>{{ category.products|length }} Ürün</p>
+            <div class="col-12" data-aos="fade-up" data-aos-delay="{{ loop.index * 100 }}">
+                <h3 class="category-title mb-4">{{ category.name }}</h3>
+                <div class="row g-4">
+                    {% for product in category.products %}
+                    <div class="col-md-4">
+                        <div class="category-card">
+                            {% if product.primary_image() %}
+                            <div class="category-image" onclick="openImageModal('{{ product.primary_image().path }}', '{{ product.name }}')">
+                                <img src="{{ product.primary_image().path }}" alt="{{ product.name }}">
+                                <div class="category-overlay">
+                                    <h3>{{ product.name }}</h3>
+                                    <p>{{ product.description }}</p>
+                                </div>
+                            </div>
+                            {% endif %}
                         </div>
                     </div>
-                    {% endif %}
+                    {% endfor %}
                 </div>
             </div>
             {% endfor %}
