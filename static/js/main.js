@@ -83,13 +83,131 @@ function createProductCard(product) {
     return col;
 }
 
+// Initialize AOS
+AOS.init({
+    duration: 800,
+    easing: 'ease-in-out',
+    once: true,
+    mirror: false
+});
+
 // Preloader
-window.addEventListener('load', function() {
-    const preloader = document.querySelector('.preloader');
-    preloader.classList.add('fade-out');
+window.addEventListener('load', () => {
+    const preloader = document.getElementById('preloader');
     setTimeout(() => {
-        preloader.style.display = 'none';
-    }, 500);
+        preloader.style.opacity = '0';
+        setTimeout(() => {
+            preloader.style.display = 'none';
+        }, 500);
+    }, 1500);
+});
+
+// Navbar Scroll Effect
+window.addEventListener('scroll', () => {
+    const navbar = document.querySelector('.navbar');
+    if (window.scrollY > 50) {
+        navbar.style.padding = '0.5rem 0';
+        navbar.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.1)';
+    } else {
+        navbar.style.padding = '1rem 0';
+        navbar.style.boxShadow = 'none';
+    }
+});
+
+// Back to Top Button
+const backToTop = document.getElementById('backToTop');
+
+window.addEventListener('scroll', () => {
+    if (window.scrollY > 300) {
+        backToTop.classList.add('active');
+    } else {
+        backToTop.classList.remove('active');
+    }
+});
+
+backToTop.addEventListener('click', (e) => {
+    e.preventDefault();
+    window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+    });
+});
+
+// Smooth Scroll for Navigation Links
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+            const headerOffset = 80;
+            const elementPosition = target.getBoundingClientRect().top;
+            const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+            window.scrollTo({
+                top: offsetPosition,
+                behavior: 'smooth'
+            });
+        }
+    });
+});
+
+// Category Card Hover Effect
+document.querySelectorAll('.category-card').forEach(card => {
+    card.addEventListener('mouseenter', () => {
+        const overlay = card.querySelector('.category-overlay');
+        if (overlay) {
+            overlay.style.transform = 'translateY(0)';
+        }
+    });
+
+    card.addEventListener('mouseleave', () => {
+        const overlay = card.querySelector('.category-overlay');
+        if (overlay) {
+            overlay.style.transform = 'translateY(100%)';
+        }
+    });
+});
+
+// Image Modal
+document.querySelectorAll('[data-toggle="modal"]').forEach(button => {
+    button.addEventListener('click', () => {
+        const target = button.getAttribute('data-target');
+        const modal = document.querySelector(target);
+        if (modal) {
+            const modalImage = modal.querySelector('img');
+            const productImage = button.querySelector('img');
+            if (modalImage && productImage) {
+                modalImage.src = productImage.src;
+            }
+        }
+    });
+});
+
+// Form Validation
+const forms = document.querySelectorAll('.needs-validation');
+forms.forEach(form => {
+    form.addEventListener('submit', event => {
+        if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+    });
+});
+
+// Parallax Effect for Hero Section
+window.addEventListener('scroll', () => {
+    const heroImage = document.querySelector('.hero-image');
+    if (heroImage) {
+        const scrolled = window.pageYOffset;
+        heroImage.style.transform = `translate3d(0, ${scrolled * 0.5}px, 0)`;
+    }
+});
+
+// Initialize Tooltips
+const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl);
 });
 
 // Animate products on scroll
@@ -109,16 +227,6 @@ const observeProducts = () => {
         observer.observe(card);
     });
 };
-
-// Navbar Scroll Effect
-window.addEventListener('scroll', function() {
-    const navbar = document.querySelector('.navbar');
-    if (window.scrollY > 50) {
-        navbar.classList.add('scrolled');
-    } else {
-        navbar.classList.remove('scrolled');
-    }
-});
 
 // Product Modal Functions
 function showProductDetails(productId) {
@@ -163,23 +271,6 @@ document.getElementById('contactForm').addEventListener('submit', function(e) {
     .catch(error => {
         console.error('Error:', error);
         alert('Bir hata oluştu. Lütfen daha sonra tekrar deneyin.');
-    });
-});
-
-// Smooth Scrolling
-document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-    anchor.addEventListener('click', function (e) {
-        e.preventDefault();
-        const target = document.querySelector(this.getAttribute('href'));
-        if (target) {
-            const navbarHeight = document.querySelector('.navbar').offsetHeight;
-            const targetPosition = target.getBoundingClientRect().top + window.pageYOffset - navbarHeight;
-            
-            window.scrollTo({
-                top: targetPosition,
-                behavior: 'smooth'
-            });
-        }
     });
 });
 
