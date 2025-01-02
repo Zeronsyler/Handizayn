@@ -366,6 +366,11 @@ def make_primary_image(product_id, image_id):
     flash('Ana görsel başarıyla güncellendi!', 'success')
     return redirect(url_for('admin'))
 
+@app.route('/categories')
+def categories():
+    categories = Category.query.all()
+    return render_template('categories.html', categories=categories)
+
 def slugify(text):
     text = text.lower()
     text = ''.join(c for c in text if c.isalnum() or c == ' ')
