@@ -11,6 +11,7 @@ except ImportError:
     print("Cloudinary import failed - check if package is installed")
 import os
 import markdown
+from datetime import datetime
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-here')
@@ -69,7 +70,7 @@ class Product(db.Model):
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
     category_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=False)
-    images = db.relationship('Image', backref='product', lazy=True)
+    images = db.relationship('Image', backref='product', lazy=True, cascade="all, delete-orphan")
     
     def primary_image(self):
         primary = Image.query.filter_by(product_id=self.id, is_primary=True).first()
@@ -86,10 +87,11 @@ class Image(db.Model):
     path = db.Column(db.String(500), nullable=False)
     section = db.Column(db.String(50))  # hero, about, product
     is_primary = db.Column(db.Boolean, default=False)
-    product_id = db.Column(db.Integer, db.ForeignKey('product.id'))
+    product_id = db.Column(db.Integer, db.ForeignKey('product.id', ondelete='CASCADE'))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def __repr__(self):
-        return f'<Image {self.path}>'
+        return f'<Image {self.filename}>'
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -400,6 +402,7 @@ def init_db():
             admin.set_password('password')  # Change this to your desired password
             db.session.add(admin)
             db.session.commit()
+            print("Admin user created successfully!")
 
 if __name__ == '__main__':
     init_db()  # Initialize database before running the app
