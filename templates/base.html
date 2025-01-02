@@ -118,6 +118,28 @@
             duration: 800,
             once: true
         });
+
+        // Smooth scroll functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const offset = 80; // Navbar height + some padding
+            
+            // Smooth scroll for all links with smooth-scroll class
+            document.querySelectorAll('a.smooth-scroll, .hero-content a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const targetId = this.getAttribute('href');
+                    const targetElement = document.querySelector(targetId);
+                    
+                    if (targetElement) {
+                        const targetPosition = targetElement.offsetTop - offset;
+                        window.scrollTo({
+                            top: targetPosition,
+                            behavior: 'smooth'
+                        });
+                    }
+                });
+            });
+        });
     </script>
     
     <!-- Custom JS -->

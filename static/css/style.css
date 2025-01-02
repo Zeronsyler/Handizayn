@@ -206,6 +206,50 @@ h1, h2, h3, h4, h5, h6 {
     }
 }
 
+/* Sections */
+section {
+    padding: 80px 0;
+    position: relative;
+}
+
+section:first-of-type {
+    padding-top: 0;
+}
+
+.section-header {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.section-header h2 {
+    color: var(--primary-color);
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+}
+
+.section-header p {
+    color: var(--text-color);
+    font-size: 1.1rem;
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+/* Categories Section */
+.categories-section {
+    padding-top: 80px;
+}
+
+/* About Section */
+.about-section {
+    padding-top: 80px;
+    background-color: #f8f9fa;
+}
+
+/* Contact Section */
+.contact-section {
+    padding-top: 80px;
+}
+
 /* Categories Section */
 .categories-section {
     padding: 6rem 0;
