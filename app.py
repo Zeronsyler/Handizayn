@@ -440,10 +440,14 @@ def init_admin_user():
         print(f"Admin kullanıcısı oluşturulurken hata: {e}")
 
 if __name__ == '__main__':
-    init_default_images()
-    init_admin_user()
+    with app.app_context():
+        db.create_all()
+        if not User.query.filter_by(username='admin').first():
+            admin = User(username='admin')
+            admin.set_password('admin123')
+            db.session.add(admin)
+            db.session.commit()
+            print("Admin kullanıcısı oluşturuldu")
+    
     port = int(os.environ.get('PORT', 5004))
-    if os.environ.get('FLASK_ENV') == 'production':
-        app.run(host='0.0.0.0', port=port)
-    else:
-        app.run(debug=True, port=port)
+    app.run(host='0.0.0.0', port=port)
