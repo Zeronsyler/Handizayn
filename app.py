@@ -83,6 +83,7 @@ class Product(db.Model):
 
 class ProductImage(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    filename = db.Column(db.String(500))  
     path = db.Column(db.String(500), nullable=False)
     is_primary = db.Column(db.Boolean, default=False)
     product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=False)
@@ -161,14 +162,9 @@ def admin():
 @login_required
 def add_product():
     try:
-        name = request.form['name']
-        description = request.form['description']
-        category_id = request.form['category']
-        files = request.files.getlist('images')
-        
-        if not files:
-            flash('Lütfen en az bir resim seçin!', 'error')
-            return redirect(url_for('admin'))
+        name = request.form.get('name')
+        description = request.form.get('description')
+        category_id = request.form.get('category')
         
         # Ürünü oluştur
         product = Product(
@@ -177,34 +173,35 @@ def add_product():
             category_id=category_id
         )
         db.session.add(product)
-        db.session.commit()
+        db.session.flush()  # ID'yi almak için flush yapıyoruz
         
-        # Resimleri yükle
-        for i, file in enumerate(files):
+        # Görselleri işle
+        files = request.files.getlist('images')
+        is_first = True
+        for file in files:
             if file and allowed_file(file.filename):
                 try:
-                    print(f"Uploading file: {file.filename}")
                     # Cloudinary'ye yükle
                     upload_result = cloudinary.uploader.upload(file)
-                    print(f"Cloudinary result: {upload_result}")
                     
-                    # Veritabanına kaydet
-                    image = ProductImage(
+                    # Ürün görselini oluştur
+                    product_image = ProductImage(
+                        filename=file.filename,  # Orijinal dosya adını kaydet
                         path=upload_result['secure_url'],
-                        product_id=product.id,
-                        is_primary=(i == 0)
+                        is_primary=is_first,
+                        product_id=product.id
                     )
-                    db.session.add(image)
-                    print(f"Added image to database: {image.path}")
+                    db.session.add(product_image)
+                    is_first = False
                 except Exception as e:
-                    print(f"Error uploading to Cloudinary: {str(e)}")
-                    continue
+                    app.logger.error(f"Görsel yükleme hatası: {str(e)}")
+                    raise
         
         db.session.commit()
-        flash('Ürün başarıyla eklendi!', 'success')
+        flash('Ürün başarıyla eklendi.', 'success')
     except Exception as e:
-        print(f"Error in add_product: {str(e)}")
         db.session.rollback()
+        app.logger.error(f"Ürün ekleme hatası: {str(e)}")
         flash(f'Ürün eklenirken bir hata oluştu: {str(e)}', 'error')
     
     return redirect(url_for('admin'))
@@ -394,92 +391,35 @@ def slugify(text):
     text = '-'.join(text.split())
     return text
 
-def create_tables():
-    with app.app_context():
-        db.create_all()
-        # Admin kullanıcısını oluştur
-        if not User.query.filter_by(username='admin').first():
-            admin = User(username='admin')
-            admin.password_hash = generate_password_hash('admin123')
-            db.session.add(admin)
-            db.session.commit()
-        
-        # Varsayılan kategorileri oluştur
-        if not Category.query.first():
-            categories = ['Modern', 'Klasik', 'Vintage', 'El Dokuma', 'Özel Tasarım']
-            for cat_name in categories:
-                category = Category(name=cat_name)
-                db.session.add(category)
-            db.session.commit()
-
-def init_default_images():
-    try:
-        with app.app_context():
-            db.create_all()
-            if not Image.query.filter_by(section='hero').first():
-                # Hero image'ı Cloudinary'ye yükle
-                hero_image_path = os.path.join(app.config['UPLOAD_FOLDER'], 'hero-carpet.jpg')
-                if os.path.exists(hero_image_path):
-                    try:
-                        upload_result = cloudinary.uploader.upload(hero_image_path)
-                        hero_image = Image(
-                            section='hero',
-                            path=upload_result['secure_url']
-                        )
-                        db.session.add(hero_image)
-                        db.session.commit()
-                        print("Hero image yüklendi:", upload_result['secure_url'])
-                    except Exception as e:
-                        print(f"Hero image yüklenirken hata: {e}")
-                else:
-                    print("Hero image bulunamadı:", hero_image_path)
-
-            if not Image.query.filter_by(section='about').first():
-                about_image = Image(
-                    section='about',
-                    path='https://res.cloudinary.com/dy46noypm/image/upload/v1703922471/about_xtpxzd.jpg'
-                )
-                db.session.add(about_image)
-                db.session.commit()
-    except Exception as e:
-        print(f"Default resimler yüklenirken hata: {e}")
-
-def init_admin_user():
-    try:
-        with app.app_context():
-            db.create_all()
-            if not User.query.filter_by(username='admin').first():
-                admin = User(username='admin')
-                admin.set_password('admin123')
-                db.session.add(admin)
-                db.session.commit()
-                print("Admin kullanıcısı oluşturuldu")
-    except Exception as e:
-        print(f"Admin kullanıcısı oluşturulurken hata: {e}")
-
-if __name__ == '__main__':
+def init_db():
     with app.app_context():
         try:
+            # Mevcut tabloları sil
+            db.drop_all()
+            
+            # Yeni tabloları oluştur
             db.create_all()
-            print("Veritabanı tabloları oluşturuldu")
             
             # Admin kullanıcısını oluştur
             if not User.query.filter_by(username='admin').first():
                 admin = User(username='admin')
                 admin.set_password('admin123')
                 db.session.add(admin)
-                db.session.commit()
-                print("Admin kullanıcısı oluşturuldu")
-                
-            # Kategorileri kontrol et
+            
+            # Varsayılan kategoriyi oluştur
             if not Category.query.first():
                 default_category = Category(name='Genel')
                 db.session.add(default_category)
-                db.session.commit()
-                print("Varsayılan kategori oluşturuldu")
-                
+            
+            db.session.commit()
+            print("Veritabanı başarıyla oluşturuldu!")
+            
         except Exception as e:
-            print(f"Başlangıç ayarları sırasında hata: {str(e)}")
+            db.session.rollback()
+            print(f"Veritabanı oluşturulurken hata: {str(e)}")
+
+if __name__ == '__main__':
+    init_db()  # Veritabanını yeniden oluştur
     
     port = int(os.environ.get('PORT', 5004))
     app.run(host='0.0.0.0', port=port)
