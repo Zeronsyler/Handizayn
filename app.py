@@ -67,14 +67,17 @@ class Category(db.Model):
 
 class Product(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(200), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
     category_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=False)
     category = db.relationship('Category', back_populates='products', lazy=True)
     images = db.relationship('ProductImage', back_populates='product', lazy=True, cascade="all, delete-orphan")
 
     def primary_image(self):
-        return next((img for img in self.images if img.is_primary), self.images[0] if self.images else None)
+        primary = next((img for img in self.images if img.is_primary), None)
+        if primary is None and self.images:
+            primary = self.images[0]
+        return primary
 
     def __repr__(self):
         return f'<Product {self.name}>'
@@ -100,13 +103,11 @@ def load_user(user_id):
 
 # Routes
 @app.route('/')
-def index():
-    products = Product.query.all()
+def home():
     categories = Category.query.all()
     hero_image = Image.query.filter_by(section='hero').first()
     about_image = Image.query.filter_by(section='about').first()
-    return render_template('index.html', 
-                         products=products, 
+    return render_template('categories.html', 
                          categories=categories,
                          hero_image=hero_image,
                          about_image=about_image)
@@ -128,7 +129,7 @@ def login():
 @login_required
 def logout():
     logout_user()
-    return redirect(url_for('index'))
+    return redirect(url_for('home'))
 
 @app.route('/admin')
 @login_required
