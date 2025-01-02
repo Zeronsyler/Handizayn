@@ -343,66 +343,97 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Footer */
 .footer {
-    background: var(--dark-color);
-    color: var(--light-color);
-    padding: 4rem 0 0;
-}
-
-.footer-logo {
-    width: 80px;
-    height: auto;
-    margin-bottom: 1rem;
+    background-color: #f8f9fa;
+    padding: 4rem 0 2rem;
+    margin-top: 4rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 .footer h4 {
+    color: var(--primary-color);
+    font-size: 1.5rem;
     margin-bottom: 1.5rem;
-    color: var(--secondary-color);
+    font-weight: 600;
 }
 
-.footer-links ul {
-    list-style: none;
-    padding: 0;
+.footer p {
+    color: var(--text-color);
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
 }
 
-.footer-links a {
-    color: var(--light-color);
+.footer .list-unstyled li {
+    margin-bottom: 1rem;
+}
+
+.footer .list-unstyled a {
+    color: var(--text-color);
     text-decoration: none;
     transition: var(--transition);
+    position: relative;
+    padding-left: 1.5rem;
     display: inline-block;
-    margin-bottom: 0.5rem;
 }
 
-.footer-links a:hover {
-    color: var(--secondary-color);
-    transform: translateX(5px);
+.footer .list-unstyled a::before {
+    content: '→';
+    position: absolute;
+    left: 0;
+    opacity: 0;
+    transition: var(--transition);
 }
 
-.social-links {
+.footer .list-unstyled a:hover {
+    color: var(--primary-color);
+    padding-left: 2rem;
+}
+
+.footer .list-unstyled a:hover::before {
+    opacity: 1;
+}
+
+.footer .contact-info li {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+.footer .contact-info i {
+    color: var(--primary-color);
+    margin-right: 1rem;
+    font-size: 1.2rem;
+}
+
+.footer .contact-info span {
+    color: var(--text-color);
+    line-height: 1.6;
+}
+
+.footer hr {
+    margin: 2rem 0;
+    opacity: 0.1;
+}
+
+.footer .text-center {
+    color: var(--text-color);
+    font-size: 0.9rem;
+}
+
+.footer .social-links {
     margin-top: 1.5rem;
 }
 
-.social-links a {
-    color: var(--light-color);
+.footer .social-links a {
+    color: var(--text-color);
     font-size: 1.5rem;
-    margin-right: 1rem;
+    margin-right: 1.5rem;
     transition: var(--transition);
 }
 
-.social-links a:hover {
-    color: var(--secondary-color);
-    transform: translateY(-5px);
-}
-
-.footer-contact i {
-    margin-right: 0.5rem;
-    color: var(--secondary-color);
-}
-
-.footer-bottom {
-    margin-top: 3rem;
-    padding: 1.5rem 0;
-    text-align: center;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+.footer .social-links a:hover {
+    color: var(--primary-color);
+    transform: translateY(-3px);
+    display: inline-block;
 }
 
 /* Back to Top Button */
