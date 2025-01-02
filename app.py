@@ -133,11 +133,15 @@ def logout():
 @app.route('/admin')
 @login_required
 def admin():
-    categories = Category.query.all()
-    products = Product.query.all()
-    return render_template('admin.html', 
-                         categories=categories,
-                         products=products)
+    try:
+        categories = Category.query.all()
+        products = Product.query.all()
+        return render_template('admin.html', 
+                             categories=categories,
+                             products=products)
+    except Exception as e:
+        app.logger.error(f"Admin sayfasında hata: {str(e)}")
+        return f"Bir hata oluştu: {str(e)}", 500
 
 @app.route('/admin/add_product', methods=['POST'])
 @login_required
@@ -441,13 +445,27 @@ def init_admin_user():
 
 if __name__ == '__main__':
     with app.app_context():
-        db.create_all()
-        if not User.query.filter_by(username='admin').first():
-            admin = User(username='admin')
-            admin.set_password('admin123')
-            db.session.add(admin)
-            db.session.commit()
-            print("Admin kullanıcısı oluşturuldu")
+        try:
+            db.create_all()
+            print("Veritabanı tabloları oluşturuldu")
+            
+            # Admin kullanıcısını oluştur
+            if not User.query.filter_by(username='admin').first():
+                admin = User(username='admin')
+                admin.set_password('admin123')
+                db.session.add(admin)
+                db.session.commit()
+                print("Admin kullanıcısı oluşturuldu")
+                
+            # Kategorileri kontrol et
+            if not Category.query.first():
+                default_category = Category(name='Genel')
+                db.session.add(default_category)
+                db.session.commit()
+                print("Varsayılan kategori oluşturuldu")
+                
+        except Exception as e:
+            print(f"Başlangıç ayarları sırasında hata: {str(e)}")
     
     port = int(os.environ.get('PORT', 5004))
     app.run(host='0.0.0.0', port=port)
