@@ -105,7 +105,7 @@ def load_user(user_id):
 @app.route('/')
 def index():
     categories = Category.query.all()
-    hero_image = Image.query.filter_by(section='hero').first()
+    hero_image = Image.query.filter_by(section='slider').first()  # 'hero' yerine 'slider' kullanıyoruz
     about_image = Image.query.filter_by(section='about').first()
     return render_template('index.html', 
                          categories=categories,
@@ -281,42 +281,41 @@ def delete_section_image(id):
 @app.route('/upload_image', methods=['POST'])
 @login_required
 def upload_image():
-    if 'image' not in request.files:
-        flash('Görsel seçilmedi')
-        return redirect(url_for('admin'))
-    
-    file = request.files['image']
-    section = request.form.get('section')
-    
-    if file.filename == '':
-        flash('Görsel seçilmedi')
-        return redirect(url_for('admin'))
+    try:
+        if 'image' not in request.files:
+            flash('Görsel seçilmedi')
+            return redirect(url_for('admin'))
         
-    if file and section:
-        filename = secure_filename(file.filename)
-        section_folder = os.path.join(app.root_path, 'static', 'images', section)
+        file = request.files['image']
+        section = request.form.get('section')
         
-        # Klasör yoksa oluştur
-        if not os.path.exists(section_folder):
-            os.makedirs(section_folder)
-        
-        file_path = os.path.join(section_folder, filename)
-        file.save(file_path)
-        
-        # Varolan görseli güncelle veya yeni görsel oluştur
-        image = Image.query.filter_by(section=section).first()
-        if image:
-            # Eski dosyayı sil
-            old_file = os.path.join(app.root_path, 'static', image.path)
-            if os.path.exists(old_file):
-                os.remove(old_file)
-            image.path = os.path.join('images', section, filename)
-        else:
-            image = Image(section=section, path=os.path.join('images', section, filename))
-            db.session.add(image)
-        
-        db.session.commit()
-        flash('Görsel başarıyla yüklendi')
+        if file.filename == '':
+            flash('Görsel seçilmedi')
+            return redirect(url_for('admin'))
+            
+        if file and section and allowed_file(file.filename):
+            try:
+                # Cloudinary'ye yükle
+                upload_result = cloudinary.uploader.upload(file)
+                
+                # Varolan görseli güncelle veya yeni görsel oluştur
+                image = Image.query.filter_by(section=section).first()
+                if image:
+                    image.path = upload_result['secure_url']
+                else:
+                    image = Image(section=section, path=upload_result['secure_url'])
+                    db.session.add(image)
+                
+                db.session.commit()
+                flash('Görsel başarıyla yüklendi')
+                
+            except Exception as e:
+                app.logger.error(f"Görsel yükleme hatası: {str(e)}")
+                flash(f'Görsel yüklenirken bir hata oluştu: {str(e)}', 'error')
+                
+    except Exception as e:
+        app.logger.error(f"Görsel yükleme işleminde hata: {str(e)}")
+        flash(f'Bir hata oluştu: {str(e)}', 'error')
     
     return redirect(url_for('admin'))
 
