@@ -405,6 +405,12 @@ def add_category():
 def delete_category(id):
     try:
         category = Category.query.get_or_404(id)
+        
+        # Kategoriye ait ürünleri kontrol et
+        if category.products:
+            flash('Bu kategoriye ait ürünler var. Önce ürünleri silmelisiniz.', 'error')
+            return redirect(url_for('admin'))
+            
         db.session.delete(category)
         db.session.commit()
         flash('Kategori başarıyla silindi', 'success')
