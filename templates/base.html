@@ -3,72 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Han Dizayn - Admin Panel</title>
+    <title>Han Dizayn - El Dokuması Halılar</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        :root {
-            --primary-color: #1A1A1A;
-            --secondary-color: #9C7C38;
-            --accent-color: #C5A572;
-        }
-        
-        body {
-            background-color: #f8f9fa;
-        }
-        
-        .navbar {
-            background-color: var(--primary-color) !important;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .card {
-            border: none;
-            box-shadow: 0 0 15px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-        }
-        
-        .card-header {
-            background-color: var(--primary-color);
-            color: white;
-            border-bottom: none;
-        }
-        
-        .btn-primary {
-            background-color: var(--secondary-color);
-            border-color: var(--secondary-color);
-        }
-        
-        .btn-primary:hover {
-            background-color: var(--accent-color);
-            border-color: var(--accent-color);
-        }
-    </style>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- AOS CSS -->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
-    <!-- Admin Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark">
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg fixed-top">
         <div class="container">
-            <a class="navbar-brand" href="/">
-                <i class="fas fa-carpet fa-lg me-2"></i>
-                Han Dizayn Admin
-            </a>
+            <a class="navbar-brand" href="{{ url_for('index') }}">Han Dizayn</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="/">
-                            <i class="fas fa-home me-1"></i>
-                            Ana Sayfa
-                        </a>
+                        <a class="nav-link" href="{{ url_for('index') }}">Ana Sayfa</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('logout') }}">
-                            <i class="fas fa-sign-out-alt me-1"></i>
-                            Çıkış Yap
-                        </a>
+                        <a class="nav-link" href="{{ url_for('categories') }}">Koleksiyonlar</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#about">Hakkımızda</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#contact">İletişim</a>
                     </li>
                 </ul>
             </div>
@@ -76,23 +48,79 @@
     </nav>
 
     <!-- Flash Messages -->
-    <div class="container mt-3">
-        {% with messages = get_flashed_messages() %}
-            {% if messages %}
-                {% for message in messages %}
-                    <div class="alert alert-info alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                {% endfor %}
-            {% endif %}
+    <div class="container mt-4">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+        {% endif %}
         {% endwith %}
     </div>
 
-    <!-- Main Content -->
+    <!-- Content -->
     {% block content %}{% endblock %}
 
-    <!-- Scripts -->
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-4 mb-4">
+                    <h4>Han Dizayn</h4>
+                    <p>Geleneksel el sanatını modern tasarımla buluşturuyoruz. Her ürünümüz, yüzyıllık dokuma geleneklerini çağdaş estetikle birleştirerek evinize benzersiz bir dokunuş katıyor.</p>
+                </div>
+                <div class="col-lg-4 mb-4">
+                    <h4>Hızlı Bağlantılar</h4>
+                    <ul class="list-unstyled">
+                        <li><a href="{{ url_for('index') }}">Ana Sayfa</a></li>
+                        <li><a href="{{ url_for('categories') }}">Koleksiyonlar</a></li>
+                        <li><a href="#about">Hakkımızda</a></li>
+                        <li><a href="#contact">İletişim</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-4 mb-4">
+                    <h4>İletişim</h4>
+                    <ul class="list-unstyled contact-info">
+                        <li>
+                            <i class="fas fa-map-marker-alt"></i>
+                            <span>Beştepe Mahallesi, 192004 Sokak No:5, Gaziantep</span>
+                        </li>
+                        <li>
+                            <i class="fas fa-phone"></i>
+                            <span>+90 (542) 537 65 08</span>
+                        </li>
+                        <li>
+                            <i class="fas fa-envelope"></i>
+                            <span>handizayn2734@gmail.com</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <hr>
+            <div class="text-center">
+                <p>&copy; 2024 Han Dizayn. Tüm hakları saklıdır.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- AOS JS -->
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    
+    <!-- Initialize AOS -->
+    <script>
+        AOS.init({
+            duration: 800,
+            once: true
+        });
+    </script>
+    
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
 </html>

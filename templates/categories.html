@@ -2,57 +2,84 @@
 
 {% block content %}
 {% if hero_image %}
-<div class="hero-section mb-4">
-    <img src="{{ hero_image.path }}" alt="Hero Image" class="img-fluid w-100" style="max-height: 400px; object-fit: cover;">
+<div class="hero-section mb-4" style="background-image: url('{{ hero_image.path }}'); height: 60vh;">
+    <div class="hero-content">
+        <h1 class="hero-title">Koleksiyonlarımız</h1>
+        <p class="hero-subtitle">Benzersiz el dokuması halılarımızı keşfedin</p>
+    </div>
 </div>
 {% endif %}
 
-<div class="container mt-4">
+<div class="container mt-5">
     <div class="row">
         {% for category in categories %}
-        <div class="col-md-4 mb-4">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">{{ category.name }}</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        {% for product in category.products %}
-                        <div class="col-12 mb-3">
-                            <div class="card">
-                                {% if product.images %}
-                                <img src="{{ product.primary_image().path }}" class="card-img-top" alt="{{ product.name }}" style="height: 200px; object-fit: cover;">
-                                {% endif %}
-                                <div class="card-body">
-                                    <h6 class="card-title">{{ product.name }}</h6>
-                                    {% if product.description %}
-                                    <p class="card-text">{{ product.description }}</p>
-                                    {% endif %}
-                                </div>
-                            </div>
+        <div class="col-12 mb-5" id="{{ category.name|lower }}">
+            <div class="section-title">
+                <h2>{{ category.name }}</h2>
+                <p>{{ category.products|length }} benzersiz tasarım</p>
+            </div>
+            <div class="row">
+                {% for product in category.products %}
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100">
+                        {% if product.images %}
+                        <img src="{{ product.primary_image().path }}" class="card-img-top" alt="{{ product.name }}" style="height: 300px; object-fit: cover;">
+                        {% endif %}
+                        <div class="card-body">
+                            <h5 class="card-title">{{ product.name }}</h5>
+                            {% if product.description %}
+                            <p class="card-text">{{ product.description }}</p>
+                            {% endif %}
+                            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#productModal{{ product.id }}">
+                                Detayları Gör
+                            </button>
                         </div>
-                        {% endfor %}
                     </div>
                 </div>
+
+                <!-- Product Modal -->
+                <div class="modal fade" id="productModal{{ product.id }}" tabindex="-1">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">{{ product.name }}</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                {% if product.images %}
+                                <div id="carousel{{ product.id }}" class="carousel slide" data-bs-ride="carousel">
+                                    <div class="carousel-inner">
+                                        {% for image in product.images %}
+                                        <div class="carousel-item {% if loop.first %}active{% endif %}">
+                                            <img src="{{ image.path }}" class="d-block w-100" alt="{{ product.name }}" style="height: 500px; object-fit: contain;">
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    {% if product.images|length > 1 %}
+                                    <button class="carousel-control-prev" type="button" data-bs-target="#carousel{{ product.id }}" data-bs-slide="prev">
+                                        <span class="carousel-control-prev-icon"></span>
+                                    </button>
+                                    <button class="carousel-control-next" type="button" data-bs-target="#carousel{{ product.id }}" data-bs-slide="next">
+                                        <span class="carousel-control-next-icon"></span>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                                <div class="mt-4">
+                                    <h6>Ürün Detayları</h6>
+                                    <p>{{ product.description }}</p>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
             </div>
         </div>
         {% endfor %}
     </div>
 </div>
-
-{% if about_image %}
-<div class="about-section mt-4">
-    <div class="container">
-        <div class="row">
-            <div class="col-md-6">
-                <img src="{{ about_image.path }}" alt="About Image" class="img-fluid rounded">
-            </div>
-            <div class="col-md-6">
-                <h2>Hakkımızda</h2>
-                <p>Handizayn, geleneksel el dokuması halı ve kilimlerin modern tasarımla buluştuğu bir markadır. Her ürünümüz, yüzyıllık dokuma geleneklerini çağdaş estetikle birleştirerek, evinize benzersiz bir dokunuş katmayı amaçlar.</p>
-            </div>
-        </div>
-    </div>
-</div>
-{% endif %}
 {% endblock %}

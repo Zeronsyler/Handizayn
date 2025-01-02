@@ -40,27 +40,28 @@
         </div>
     </nav>
 
+    {% extends "base.html" %}
+
+    {% block content %}
     <!-- Hero Section -->
-    <section id="home" class="hero">
-        {% if hero_image %}
-        <div class="hero-image" style="background-image: url('{{ hero_image.path }}')">
-            <div class="hero-overlay"></div>
-            <div class="hero-content">
-                <h1 data-aos="fade-up">HAN DİZAYN</h1>
-                <p data-aos="fade-up" data-aos-delay="200">Geleneksel Sanatın Modern Yorumu</p>
-                <div class="hero-buttons" data-aos="fade-up" data-aos-delay="400">
-                    <a href="#categories" class="btn btn-primary btn-lg">Koleksiyonumuzu Keşfedin</a>
-                    <a href="#about" class="btn btn-outline-light btn-lg ms-3">Hakkımızda</a>
-                </div>
+    {% if hero_image %}
+    <section class="hero">
+        <div class="hero-image" style="background-image: url('{{ hero_image.path }}');"></div>
+        <div class="hero-content">
+            <h1 data-aos="fade-up">HAN DİZAYN</h1>
+            <p data-aos="fade-up" data-aos-delay="200">Geleneksel El Sanatının Modern Yorumu</p>
+            <div data-aos="fade-up" data-aos-delay="400">
+                <a href="#categories" class="btn btn-primary btn-lg">Koleksiyonumuzu Keşfedin</a>
+                <a href="#about" class="btn btn-outline-light btn-lg ms-3">Hakkımızda</a>
             </div>
         </div>
-        {% endif %}
     </section>
+    {% endif %}
 
     <!-- Categories Section -->
-    <section id="categories" class="section-padding">
+    <section id="categories" class="categories-section">
         <div class="container">
-            <div class="section-header text-center" data-aos="fade-up">
+            <div class="section-header" data-aos="fade-up">
                 <h2>Koleksiyonlarımız</h2>
                 <p>El yapımı halılarımızda geleneksel motifleri modern tasarımlarla buluşturuyoruz</p>
             </div>
@@ -85,7 +86,7 @@
     </section>
 
     <!-- About Section -->
-    <section id="about" class="section-padding bg-light">
+    <section id="about" class="about-section">
         <div class="container">
             <div class="row align-items-center">
                 <div class="col-lg-6" data-aos="fade-right">
@@ -124,9 +125,9 @@
     </section>
 
     <!-- Contact Section -->
-    <section id="contact" class="section-padding">
+    <section id="contact" class="contact-section">
         <div class="container">
-            <div class="section-header text-center" data-aos="fade-up">
+            <div class="section-header" data-aos="fade-up">
                 <h2>İletişim</h2>
                 <p>Sorularınız için bize ulaşın</p>
             </div>
@@ -153,6 +154,7 @@
             </div>
         </div>
     </section>
+    {% endblock %}
 
     <!-- Footer -->
     <footer class="footer">
