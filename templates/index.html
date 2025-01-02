@@ -41,26 +41,20 @@
     </nav>
 
     <!-- Hero Section -->
-    <section id="home" class="hero" style="background-image: url('{{ url_for('static', filename='images/hero/hero-bg.jpg') }}')">
-        <div class="hero-pattern"></div>
-        <div class="hero-content" data-aos="fade-up">
-            <h1>HAN DİZAYN</h1>
-            <p>Geleneksel Sanatın Modern Yorumu</p>
-            <div class="hero-buttons">
-                <a href="#categories" class="btn btn-primary btn-lg">Koleksiyonumuzu Keşfedin</a>
-                <a href="#about" class="btn btn-outline-light btn-lg ms-3">Hakkımızda</a>
+    <section id="home" class="hero">
+        {% if hero_image %}
+        <div class="hero-image" style="background-image: url('{{ hero_image.path }}')">
+            <div class="hero-overlay"></div>
+            <div class="hero-content">
+                <h1 data-aos="fade-up">HAN DİZAYN</h1>
+                <p data-aos="fade-up" data-aos-delay="200">Geleneksel Sanatın Modern Yorumu</p>
+                <div class="hero-buttons" data-aos="fade-up" data-aos-delay="400">
+                    <a href="#categories" class="btn btn-primary btn-lg">Koleksiyonumuzu Keşfedin</a>
+                    <a href="#about" class="btn btn-outline-light btn-lg ms-3">Hakkımızda</a>
+                </div>
             </div>
         </div>
-        <div class="scroll-indicator">
-            <div class="mouse">
-                <div class="wheel"></div>
-            </div>
-            <div class="arrows">
-                <span></span>
-                <span></span>
-                <span></span>
-            </div>
-        </div>
+        {% endif %}
     </section>
 
     <!-- Categories Section -->
@@ -71,98 +65,18 @@
                 <p>El yapımı halılarımızda geleneksel motifleri modern tasarımlarla buluşturuyoruz</p>
             </div>
             <div class="row g-4">
-                {% for product in products %}
-                <div class="col-md-6 col-lg-4">
-                    <div class="card h-100">
-                        {% if product.primary_image() %}
-                        <img src="{{ url_for('static', filename=product.primary_image().path) }}" 
-                             class="card-img-top product-image" alt="{{ product.name }}"
-                             style="height: 400px; object-fit: cover; cursor: pointer;"
-                             data-bs-toggle="modal" 
-                             data-bs-target="#imageModal{{ product.id }}">
+                {% for category in categories %}
+                <div class="col-md-4" data-aos="fade-up" data-aos-delay="{{ loop.index * 100 }}">
+                    <div class="category-card">
+                        {% if category.products and category.products[0].primary_image() %}
+                        <div class="category-image">
+                            <img src="{{ category.products[0].primary_image().path }}" alt="{{ category.name }}">
+                            <div class="category-overlay">
+                                <h3>{{ category.name }}</h3>
+                                <p>{{ category.products|length }} Ürün</p>
+                            </div>
+                        </div>
                         {% endif %}
-                        <div class="card-body">
-                            <h5 class="card-title">{{ product.name }}</h5>
-                            <p class="card-text">{{ product.description }}</p>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <a href="#contact" class="btn btn-primary">İletişime Geçin</a>
-                                {% if product.images|length > 1 %}
-                                <button class="btn btn-outline-primary" 
-                                        data-bs-toggle="modal" 
-                                        data-bs-target="#galleryModal{{ product.id }}">
-                                    <i class="fas fa-images me-1"></i>
-                                    Tüm Görseller ({{ product.images|length }})
-                                </button>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tekli Görsel Modal -->
-                <div class="modal fade" id="imageModal{{ product.id }}" tabindex="-1">
-                    <div class="modal-dialog modal-lg modal-dialog-centered">
-                        <div class="modal-content">
-                            <div class="modal-header border-0">
-                                <h5 class="modal-title">{{ product.name }}</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                            </div>
-                            <div class="modal-body text-center p-0">
-                                <img src="{{ url_for('static', filename=product.primary_image().path) }}" 
-                                     class="img-fluid" 
-                                     alt="{{ product.name }}">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Galeri Modal -->
-                <div class="modal fade" id="galleryModal{{ product.id }}" tabindex="-1">
-                    <div class="modal-dialog modal-xl modal-dialog-centered">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title">{{ product.name }} - Tüm Görseller</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                            </div>
-                            <div class="modal-body">
-                                <div id="carousel{{ product.id }}" class="carousel slide">
-                                    <div class="carousel-inner">
-                                        {% for image in product.images %}
-                                        <div class="carousel-item {% if loop.first %}active{% endif %}">
-                                            <img src="{{ url_for('static', filename=image.path) }}" 
-                                                 class="d-block w-100" 
-                                                 alt="{{ product.name }}"
-                                                 style="max-height: 70vh; object-fit: contain;">
-                                        </div>
-                                        {% endfor %}
-                                    </div>
-                                    {% if product.images|length > 1 %}
-                                    <button class="carousel-control-prev" type="button" 
-                                            data-bs-target="#carousel{{ product.id }}" data-bs-slide="prev">
-                                        <span class="carousel-control-prev-icon"></span>
-                                        <span class="visually-hidden">Önceki</span>
-                                    </button>
-                                    <button class="carousel-control-next" type="button" 
-                                            data-bs-target="#carousel{{ product.id }}" data-bs-slide="next">
-                                        <span class="carousel-control-next-icon"></span>
-                                        <span class="visually-hidden">Sonraki</span>
-                                    </button>
-                                    {% endif %}
-                                </div>
-                                <!-- Küçük Resimler -->
-                                <div class="row mt-3 g-2">
-                                    {% for image in product.images %}
-                                    <div class="col-3 col-md-2">
-                                        <img src="{{ url_for('static', filename=image.path) }}" 
-                                             class="img-fluid rounded cursor-pointer" 
-                                             alt="{{ product.name }}"
-                                             style="height: 80px; object-fit: cover;"
-                                             onclick="document.querySelector('#carousel{{ product.id }} .carousel-item:nth-child({{ loop.index }})').classList.add('active')">
-                                    </div>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 </div>
                 {% endfor %}
@@ -200,7 +114,9 @@
                 </div>
                 <div class="col-lg-6" data-aos="fade-left">
                     <div class="about-image">
-                        <img src="{{ url_for('static', filename='images/about/workshop.jpg') }}" alt="Han Dizayn Atölyesi" class="img-fluid rounded shadow">
+                        {% if about_image %}
+                        <img src="{{ about_image.path }}" alt="Han Dizayn Atölyesi" class="img-fluid rounded shadow">
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -210,34 +126,28 @@
     <!-- Contact Section -->
     <section id="contact" class="section-padding">
         <div class="container">
-            <div class="section-header text-center mb-5">
+            <div class="section-header text-center" data-aos="fade-up">
                 <h2>İletişim</h2>
                 <p>Sorularınız için bize ulaşın</p>
             </div>
             <div class="row justify-content-center">
-                <div class="col-lg-8">
-                    <div class="contact-form">
-                        <form id="contactForm">
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <input type="text" class="form-control" placeholder="Adınız" required>
-                                </div>
-                                <div class="col-md-6">
-                                    <input type="email" class="form-control" placeholder="E-posta Adresiniz" required>
-                                </div>
-                                <div class="col-12">
-                                    <input type="text" class="form-control" placeholder="Konu" required>
-                                </div>
-                                <div class="col-12">
-                                    <textarea class="form-control" rows="5" placeholder="Mesajınız" required></textarea>
-                                </div>
-                                <div class="col-12 text-center">
-                                    <button type="submit" class="btn btn-primary btn-lg">
-                                        <i class="fas fa-paper-plane me-2"></i>Gönder
-                                    </button>
-                                </div>
-                            </div>
-                        </form>
+                <div class="col-md-8">
+                    <div class="contact-info text-center">
+                        <div class="info-item" data-aos="fade-up" data-aos-delay="100">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <h4>Adres</h4>
+                            <p>Beştepe Mahallesi, 192004 Sokak No:5, Gaziantep</p>
+                        </div>
+                        <div class="info-item" data-aos="fade-up" data-aos-delay="200">
+                            <i class="fas fa-phone"></i>
+                            <h4>Telefon</h4>
+                            <p>+90 (542) 537 65 08</p>
+                        </div>
+                        <div class="info-item" data-aos="fade-up" data-aos-delay="300">
+                            <i class="fas fa-envelope"></i>
+                            <h4>E-posta</h4>
+                            <p>handizayn2734@gmail.com</p>
+                        </div>
                     </div>
                 </div>
             </div>

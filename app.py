@@ -103,11 +103,11 @@ def load_user(user_id):
 
 # Routes
 @app.route('/')
-def home():
+def index():
     categories = Category.query.all()
     hero_image = Image.query.filter_by(section='hero').first()
     about_image = Image.query.filter_by(section='about').first()
-    return render_template('categories.html', 
+    return render_template('index.html', 
                          categories=categories,
                          hero_image=hero_image,
                          about_image=about_image)
@@ -129,24 +129,16 @@ def login():
 @login_required
 def logout():
     logout_user()
-    return redirect(url_for('home'))
+    return redirect(url_for('index'))
 
 @app.route('/admin')
 @login_required
 def admin():
-    products = Product.query.all()
     categories = Category.query.all()
-    
-    # Bölüm görsellerini getir
-    section_images = {}
-    for section in ['hero', 'about']:
-        image = Image.query.filter_by(section=section).first()
-        section_images[section] = image
-    
+    products = Product.query.all()
     return render_template('admin.html', 
-                         products=products, 
                          categories=categories,
-                         images=section_images)
+                         products=products)
 
 @app.route('/admin/add_product', methods=['POST'])
 @login_required
