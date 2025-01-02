@@ -44,13 +44,6 @@ db = SQLAlchemy(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
-# Veritabanını sıfırla ve yeniden oluştur (sadece development modunda)
-if os.environ.get('FLASK_ENV') == 'development':
-    with app.app_context():
-        db.drop_all()
-        db.create_all()
-        print("Veritabanı sıfırlandı ve yeniden oluşturuldu!")
-
 # Veritabanı modellerini tanımla
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
