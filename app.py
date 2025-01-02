@@ -80,7 +80,9 @@ class Product(db.Model):
         return f'<Product {self.name}>'
 
 class ProductImage(db.Model):
+    __tablename__ = 'product_image'
     __table_args__ = {'extend_existing': True}
+    
     id = db.Column(db.Integer, primary_key=True)
     path = db.Column(db.String(500), nullable=False)
     is_primary = db.Column(db.Boolean, default=False)
@@ -90,7 +92,9 @@ class ProductImage(db.Model):
         return f'<ProductImage {self.path}>'
 
 class Image(db.Model):
+    __tablename__ = 'image'
     __table_args__ = {'extend_existing': True}
+    
     id = db.Column(db.Integer, primary_key=True)
     section = db.Column(db.String(50), nullable=False)  # hero, about
     path = db.Column(db.String(500), nullable=False)
