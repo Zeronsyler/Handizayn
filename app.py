@@ -57,39 +57,46 @@ class User(UserMixin, db.Model):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
-class Image(db.Model):
+class Category(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    filename = db.Column(db.String(500))
-    path = db.Column(db.String(500), nullable=False)
-    section = db.Column(db.String(50))  # hero, about, product
-    is_primary = db.Column(db.Boolean, default=False)
-    product_id = db.Column(db.Integer, db.ForeignKey('product.id', ondelete='CASCADE'))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    name = db.Column(db.String(200), unique=True, nullable=False)
+    products = db.relationship('Product', back_populates='category', lazy=True)
 
     def __repr__(self):
-        return f'<Image {self.filename}>'
+        return f'<Category {self.name}>'
 
 class Product(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
     category_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=False)
-    images = db.relationship('Image', backref='product', lazy=True, cascade="all, delete-orphan")
-    
+    category = db.relationship('Category', back_populates='products', lazy=True)
+    images = db.relationship('ProductImage', back_populates='product', lazy=True, cascade="all, delete-orphan")
+
     def primary_image(self):
-        return Image.query.filter_by(product_id=self.id, is_primary=True).first() or \
-               Image.query.filter_by(product_id=self.id).first()
+        primary = next((img for img in self.images if img.is_primary), None)
+        if primary is None and self.images:
+            primary = self.images[0]
+        return primary
 
     def __repr__(self):
         return f'<Product {self.name}>'
 
-class Category(db.Model):
+class ProductImage(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    products = db.relationship('Product', backref='category', lazy=True)
+    filename = db.Column(db.String(500))  
+    path = db.Column(db.String(500), nullable=False)
+    is_primary = db.Column(db.Boolean, default=False)
+    product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=False)
+    product = db.relationship('Product', back_populates='images')
 
     def __repr__(self):
-        return f'<Category {self.name}>'
+        return f'<ProductImage {self.path}>'
+
+class Image(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    section = db.Column(db.String(50), nullable=False)
+    path = db.Column(db.String(200), nullable=False)
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -179,7 +186,7 @@ def add_product():
                     upload_result = cloudinary.uploader.upload(file)
                     
                     # Ürün görselini oluştur
-                    product_image = Image(
+                    product_image = ProductImage(
                         filename=file.filename,
                         path=upload_result['secure_url'],
                         product_id=product.id
@@ -220,7 +227,7 @@ def edit_product(id):
                     continue
                 
                 # Veritabanına kaydet
-                image = Image(
+                image = ProductImage(
                     filename=file.filename,
                     path=result['secure_url'],
                     product_id=product.id
@@ -236,7 +243,7 @@ def edit_product(id):
 @app.route('/admin/delete_product_image/<int:id>')
 @login_required
 def delete_product_image(id):
-    image = Image.query.get_or_404(id)
+    image = ProductImage.query.get_or_404(id)
     
     # Cloudinary'den sil
     try:
@@ -370,7 +377,7 @@ def make_primary_image(product_id, image_id):
         image.is_primary = False
     
     # Seçilen resmi primary yap
-    image = Image.query.get_or_404(image_id)
+    image = ProductImage.query.get_or_404(image_id)
     image.is_primary = True
     
     db.session.commit()
@@ -390,24 +397,33 @@ def slugify(text):
 
 def init_db():
     with app.app_context():
-        db.drop_all()
-        db.create_all()
-        
-        # Create admin user
-        if not User.query.filter_by(username='admin').first():
-            admin = User(username='admin')
-            admin.set_password('password')
-            db.session.add(admin)
+        try:
+            # Mevcut tabloları sil
+            db.drop_all()
             
-            # Create default categories
-            modern = Category(name='Modern')
-            classic = Category(name='Klasik')
-            db.session.add(modern)
-            db.session.add(classic)
+            # Yeni tabloları oluştur
+            db.create_all()
+            
+            # Admin kullanıcısını oluştur
+            if not User.query.filter_by(username='admin').first():
+                admin = User(username='admin')
+                admin.set_password('admin123')
+                db.session.add(admin)
+            
+            # Varsayılan kategoriyi oluştur
+            if not Category.query.first():
+                default_category = Category(name='Genel')
+                db.session.add(default_category)
             
             db.session.commit()
-            print("Database initialized successfully!")
+            print("Veritabanı başarıyla oluşturuldu!")
+            
+        except Exception as e:
+            db.session.rollback()
+            print(f"Veritabanı oluşturulurken hata: {str(e)}")
 
 if __name__ == '__main__':
-    init_db()  # Initialize database before running the app
-    app.run(debug=True)
+    init_db()  # Veritabanını yeniden oluştur
+    
+    port = int(os.environ.get('PORT', 5004))
+    app.run(host='0.0.0.0', port=port)
