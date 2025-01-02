@@ -136,9 +136,11 @@ def admin():
     try:
         categories = Category.query.all()
         products = Product.query.all()
+        images = Image.query.all()  # Tüm section görsellerini al
         return render_template('admin.html', 
                              categories=categories,
-                             products=products)
+                             products=products,
+                             images=images)
     except Exception as e:
         app.logger.error(f"Admin sayfasında hata: {str(e)}")
         return f"Bir hata oluştu: {str(e)}", 500
