@@ -12,6 +12,7 @@ except ImportError:
 import os
 import markdown
 from datetime import datetime
+import logging
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-here')
@@ -60,7 +61,7 @@ class User(UserMixin, db.Model):
 class Category(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(200), unique=True, nullable=False)
-    products = db.relationship('Product', back_populates='category', lazy=True)
+    products = db.relationship('Product', backref='category', lazy=True)
 
     def __repr__(self):
         return f'<Category {self.name}>'
@@ -70,14 +71,11 @@ class Product(db.Model):
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
     category_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=False)
-    category = db.relationship('Category', back_populates='products', lazy=True)
-    images = db.relationship('ProductImage', back_populates='product', lazy=True, cascade="all, delete-orphan")
+    images = db.relationship('ProductImage', backref='product', lazy=True, cascade="all, delete-orphan")
 
     def primary_image(self):
-        primary = next((img for img in self.images if img.is_primary), None)
-        if primary is None and self.images:
-            primary = self.images[0]
-        return primary
+        return ProductImage.query.filter_by(product_id=self.id, is_primary=True).first() or \
+               ProductImage.query.filter_by(product_id=self.id).first()
 
     def __repr__(self):
         return f'<Product {self.name}>'
@@ -86,16 +84,18 @@ class ProductImage(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     path = db.Column(db.String(500), nullable=False)
     is_primary = db.Column(db.Boolean, default=False)
-    product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=False)
-    product = db.relationship('Product', back_populates='images')
+    product_id = db.Column(db.Integer, db.ForeignKey('product.id', ondelete='CASCADE'), nullable=False)
 
     def __repr__(self):
         return f'<ProductImage {self.path}>'
 
 class Image(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    section = db.Column(db.String(50), nullable=False)
-    path = db.Column(db.String(200), nullable=False)
+    section = db.Column(db.String(50), nullable=False)  # hero, about
+    path = db.Column(db.String(500), nullable=False)
+
+    def __repr__(self):
+        return f'<Image {self.section}>'
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -108,7 +108,7 @@ def index():
     about_image = Image.query.filter_by(section='about').first()
     categories = Category.query.all()
     return render_template('index.html', 
-                         hero_image=hero_image, 
+                         hero_image=hero_image,
                          about_image=about_image,
                          categories=categories)
 
@@ -135,75 +135,69 @@ def logout():
 @login_required
 def admin():
     try:
-        categories = Category.query.all()
         products = Product.query.all()
-        
-        # Görselleri section'lara göre grupla
-        images_dict = {}
-        all_images = Image.query.all()
-        for image in all_images:
-            images_dict[image.section] = image
-            
-        # Eğer bazı section'lar için görsel yoksa, None değeri ata
-        required_sections = ['slider', 'about', 'contact']  # Gerekli section'lar
-        for section in required_sections:
-            if section not in images_dict:
-                images_dict[section] = None
-        
-        return render_template('admin.html', 
-                             categories=categories,
-                             products=products,
-                             images=images_dict)
+        categories = Category.query.all()
+        sections = ['hero', 'about']
+        images = {section: Image.query.filter_by(section=section).first() for section in sections}
+        return render_template('admin.html', products=products, categories=categories, images=images)
     except Exception as e:
-        app.logger.error(f"Admin sayfasında hata: {str(e)}")
-        return f"Bir hata oluştu: {str(e)}", 500
+        app.logger.error(f"Admin sayfası hatası: {str(e)}")
+        flash(f'Bir hata oluştu: {str(e)}', 'error')
+        return redirect(url_for('index'))
 
 @app.route('/admin/add_product', methods=['GET', 'POST'])
 @login_required
 def add_product():
     if request.method == 'POST':
-        name = request.form.get('name')
-        description = request.form.get('description')
-        category_id = request.form.get('category')
-        files = request.files.getlist('images')
-        
-        if name and category_id:
-            try:
-                # Ürünü oluştur
-                product = Product(
-                    name=name,
-                    description=description,
-                    category_id=category_id
-                )
-                db.session.add(product)
-                db.session.commit()
-                
-                # Görselleri kaydet
-                is_first = True  # İlk resmi primary olarak işaretle
-                for file in files:
-                    if file.filename == '':
-                        continue
+        try:
+            name = request.form.get('name')
+            description = request.form.get('description')
+            category_id = request.form.get('category')
+            
+            if not name or not category_id:
+                flash('Lütfen gerekli alanları doldurun!', 'error')
+                return redirect(url_for('admin'))
+            
+            # Ürünü oluştur
+            product = Product(
+                name=name,
+                description=description,
+                category_id=category_id
+            )
+            db.session.add(product)
+            db.session.commit()
+            
+            # Görselleri kaydet
+            files = request.files.getlist('images')
+            is_first = True
+            
+            for file in files:
+                if file and file.filename:
+                    try:
+                        # Cloudinary'ye yükle
+                        upload_result = cloudinary.uploader.upload(file)
                         
-                    # Cloudinary'ye yükle
-                    upload_result = cloudinary.uploader.upload(file)
-                    
-                    # Ürün görselini oluştur
-                    product_image = ProductImage(
-                        path=upload_result['secure_url'],
-                        is_primary=is_first,
-                        product_id=product.id
-                    )
-                    db.session.add(product_image)
-                    is_first = False
-                
-                db.session.commit()
-                flash('Ürün başarıyla eklendi!', 'success')
-                return redirect(url_for('admin_products'))
-            except Exception as e:
-                db.session.rollback()
-                flash(f'Ürün eklenirken bir hata oluştu: {str(e)}', 'error')
-        else:
-            flash('Lütfen gerekli alanları doldurun!', 'error')
+                        # Ürün görselini oluştur
+                        product_image = ProductImage(
+                            path=upload_result['secure_url'],
+                            is_primary=is_first,
+                            product_id=product.id
+                        )
+                        db.session.add(product_image)
+                        is_first = False
+                    except Exception as e:
+                        app.logger.error(f"Görsel yükleme hatası: {str(e)}")
+                        continue
+            
+            db.session.commit()
+            flash('Ürün başarıyla eklendi!', 'success')
+            return redirect(url_for('admin'))
+            
+        except Exception as e:
+            db.session.rollback()
+            app.logger.error(f"Ürün ekleme hatası: {str(e)}")
+            flash(f'Ürün eklenirken bir hata oluştu: {str(e)}', 'error')
+            return redirect(url_for('admin'))
     
     categories = Category.query.all()
     return render_template('admin/add_product.html', categories=categories)
@@ -211,18 +205,18 @@ def add_product():
 @app.route('/admin/upload_image', methods=['POST'])
 @login_required
 def upload_image():
-    if 'image' not in request.files:
-        flash('Dosya seçilmedi', 'error')
-        return redirect(url_for('admin'))
-    
-    file = request.files['image']
-    section = request.form.get('section')
-    
-    if file.filename == '':
-        flash('Dosya seçilmedi', 'error')
-        return redirect(url_for('admin'))
-    
     try:
+        if 'image' not in request.files:
+            flash('Dosya seçilmedi', 'error')
+            return redirect(url_for('admin'))
+        
+        file = request.files['image']
+        section = request.form.get('section')
+        
+        if not file or not file.filename or not section:
+            flash('Lütfen bir dosya seçin ve section belirtin', 'error')
+            return redirect(url_for('admin'))
+        
         # Cloudinary'ye yükle
         upload_result = cloudinary.uploader.upload(file)
         
@@ -242,8 +236,10 @@ def upload_image():
         
         db.session.commit()
         flash('Görsel başarıyla yüklendi!', 'success')
+        
     except Exception as e:
         db.session.rollback()
+        app.logger.error(f"Görsel yükleme hatası: {str(e)}")
         flash(f'Görsel yüklenirken bir hata oluştu: {str(e)}', 'error')
     
     return redirect(url_for('admin'))
@@ -259,23 +255,26 @@ def add_images(product_id):
     
     try:
         for file in files:
-            if file.filename == '':
-                continue
-            
-            # Cloudinary'ye yükle
-            result = cloudinary.uploader.upload(file)
-            
-            # Veritabanına kaydet
-            image = ProductImage(
-                path=result['secure_url'],
-                product_id=product_id
-            )
-            db.session.add(image)
+            if file and file.filename:
+                try:
+                    # Cloudinary'ye yükle
+                    result = cloudinary.uploader.upload(file)
+                    
+                    # Veritabanına kaydet
+                    image = ProductImage(
+                        path=result['secure_url'],
+                        product_id=product_id
+                    )
+                    db.session.add(image)
+                except Exception as e:
+                    app.logger.error(f"Görsel yükleme hatası: {str(e)}")
+                    continue
         
         db.session.commit()
         flash('Görseller başarıyla yüklendi!', 'success')
     except Exception as e:
         db.session.rollback()
+        app.logger.error(f"Görsel yükleme hatası: {str(e)}")
         flash(f'Görsel yüklenirken bir hata oluştu: {str(e)}', 'error')
     
     return redirect(url_for('edit_product', id=product_id))
@@ -293,19 +292,19 @@ def edit_product(id):
         files = request.files.getlist('images')
         for file in files:
             if file and allowed_file(file.filename):
-                # Cloudinary'ye yükle
                 try:
+                    # Cloudinary'ye yükle
                     result = cloudinary.uploader.upload(file)
+                    
+                    # Veritabanına kaydet
+                    image = ProductImage(
+                        path=result['secure_url'],
+                        product_id=product.id
+                    )
+                    db.session.add(image)
                 except Exception as e:
-                    print(f"Cloudinary upload failed: {e}")
+                    app.logger.error(f"Görsel yükleme hatası: {str(e)}")
                     continue
-                
-                # Veritabanına kaydet
-                image = ProductImage(
-                    path=result['secure_url'],
-                    product_id=product.id
-                )
-                db.session.add(image)
         
         db.session.commit()
         flash('Ürün başarıyla güncellendi!', 'success')
@@ -323,7 +322,7 @@ def delete_product_image(id):
         public_id = image.path.split('/')[-1].split('.')[0]
         cloudinary.uploader.destroy(public_id)
     except Exception as e:
-        print(f"Cloudinary delete failed: {e}")
+        app.logger.error(f"Cloudinary silme hatası: {str(e)}")
     
     # Veritabanından sil
     db.session.delete(image)
@@ -343,7 +342,7 @@ def delete_section_image(id):
         if os.path.exists(file_path):
             os.remove(file_path)
     except Exception as e:
-        print(f"Error deleting file: {e}")
+        app.logger.error(f"Dosya silme hatası: {str(e)}")
     
     # Veritabanından sil
     db.session.delete(image)
