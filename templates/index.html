@@ -8,8 +8,8 @@
             <h1 data-aos="fade-up">HAN DİZAYN</h1>
             <p data-aos="fade-up" data-aos-delay="200">Geleneksel El Sanatının Modern Yorumu</p>
             <div data-aos="fade-up" data-aos-delay="400">
-                <button onclick="document.getElementById('categories').scrollIntoView({behavior: 'smooth', block: 'start'})" class="btn btn-primary btn-lg">Koleksiyonumuzu Keşfedin</button>
-                <button onclick="document.getElementById('about').scrollIntoView({behavior: 'smooth', block: 'start'})" class="btn btn-outline-light btn-lg ms-3">Hakkımızda</button>
+                <button onclick="scrollToElement('categories')" class="btn btn-primary btn-lg">Koleksiyonumuzu Keşfedin</button>
+                <button onclick="scrollToElement('about')" class="btn btn-outline-light btn-lg ms-3">Hakkımızda</button>
             </div>
         </div>
     </div>
@@ -27,7 +27,7 @@
             <div class="col-md-4" data-aos="fade-up" data-aos-delay="{{ loop.index * 100 }}">
                 <div class="category-card">
                     {% if category.products and category.products[0].primary_image() %}
-                    <div class="category-image">
+                    <div class="category-image" onclick="openImageModal('{{ category.products[0].primary_image().path }}', '{{ category.name }}')">
                         <img src="{{ category.products[0].primary_image().path }}" alt="{{ category.name }}">
                         <div class="category-overlay">
                             <h3>{{ category.name }}</h3>
@@ -111,24 +111,60 @@
         </div>
     </div>
 </section>
+
+<!-- Image Modal -->
+<div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <img src="" class="img-fluid" alt="">
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Smooth scroll for anchor links
-    document.querySelectorAll('a.smooth-scroll').forEach(anchor => {
-        anchor.addEventListener('click', function(e) {
-            e.preventDefault();
-            const targetId = this.getAttribute('href');
-            const targetElement = document.querySelector(targetId);
-            if (targetElement) {
-                targetElement.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'start'
-                });
-            }
+// Smooth scroll function
+function scrollToElement(elementId) {
+    const element = document.getElementById(elementId);
+    if (element) {
+        const headerOffset = 80;
+        const elementPosition = element.getBoundingClientRect().top;
+        const offsetPosition = elementPosition + window.scrollY - headerOffset;
+
+        window.scrollTo({
+            top: offsetPosition,
+            behavior: 'smooth'
         });
+    }
+}
+
+// Image modal functions
+function openImageModal(imagePath, title) {
+    const modal = new bootstrap.Modal(document.getElementById('imageModal'));
+    const modalImage = document.querySelector('#imageModal img');
+    const modalTitle = document.querySelector('#imageModal .modal-title');
+    
+    modalImage.src = imagePath;
+    modalTitle.textContent = title;
+    modal.show();
+}
+
+// Initialize modals
+document.addEventListener('DOMContentLoaded', function() {
+    const imageModal = document.getElementById('imageModal');
+    imageModal.addEventListener('show.bs.modal', function() {
+        document.querySelector('#imageModal img').classList.add('zoom-in');
+    });
+    
+    imageModal.addEventListener('hide.bs.modal', function() {
+        document.querySelector('#imageModal img').classList.remove('zoom-in');
     });
 });
 </script>
