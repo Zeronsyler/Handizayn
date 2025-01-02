@@ -60,10 +60,15 @@ class User(UserMixin, db.Model):
 class Category(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(200), unique=True, nullable=False)
+    slug = db.Column(db.String(200), unique=True, nullable=False)
     products = db.relationship('Product', backref='category', lazy=True)
 
     def __repr__(self):
         return f'<Category {self.name}>'
+
+    def save(self):
+        if not self.slug:
+            self.slug = slugify(self.name)
 
 class Product(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -399,6 +404,7 @@ def add_category():
             return redirect(url_for('admin'))
             
         category = Category(name=name)
+        category.save()  # Slug'ı otomatik oluştur
         db.session.add(category)
         db.session.commit()
         flash('Kategori başarıyla eklendi', 'success')
@@ -437,6 +443,7 @@ def init_db():
             # Varsayılan kategoriyi oluştur
             if not Category.query.first():
                 default_category = Category(name='Genel')
+                default_category.save()
                 db.session.add(default_category)
             
             db.session.commit()
