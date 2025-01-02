@@ -18,18 +18,18 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-here')
 
 # PostgreSQL bağlantı URL'si
-DATABASE_URL = os.environ.get('DATABASE_URL')
+DATABASE_URL = os.environ.get('DATABASE_URL', 'postgresql://handizayn_user:3LkVstWfHrMV2f1r1nFYrfvRJbrJxT90@dpg-ctqfdartq21c73a0j4tg-a/handizayn')
 if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL or 'sqlite:///database.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Cloudinary yapılandırması
 cloudinary.config(
-    cloud_name=os.environ.get('CLOUDINARY_CLOUD_NAME'),
-    api_key=os.environ.get('CLOUDINARY_API_KEY'),
-    api_secret=os.environ.get('CLOUDINARY_API_SECRET')
+    cloud_name=os.environ.get('CLOUDINARY_CLOUD_NAME', 'dy46noypm'),
+    api_key=os.environ.get('CLOUDINARY_API_KEY', '264772451632922'),
+    api_secret=os.environ.get('CLOUDINARY_API_SECRET', 'V29jE3GG-OftNLbdxv05-MJlbrA')
 )
 
 # Desteklenen resim formatları
