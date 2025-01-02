@@ -390,33 +390,17 @@ def slugify(text):
 
 def init_db():
     with app.app_context():
-        try:
-            # Mevcut tabloları sil
-            db.drop_all()
-            
-            # Yeni tabloları oluştur
-            db.create_all()
-            
-            # Admin kullanıcısını oluştur
-            if not User.query.filter_by(username='admin').first():
-                admin = User(username='admin')
-                admin.set_password('admin123')
-                db.session.add(admin)
-            
-            # Varsayılan kategoriyi oluştur
-            if not Category.query.first():
-                default_category = Category(name='Genel')
-                db.session.add(default_category)
-            
+        # Drop all tables
+        db.drop_all()
+        # Create all tables
+        db.create_all()
+        # Create admin user if not exists
+        if not User.query.filter_by(username='admin').first():
+            admin = User(username='admin')
+            admin.set_password('password')  # Change this to your desired password
+            db.session.add(admin)
             db.session.commit()
-            print("Veritabanı başarıyla oluşturuldu!")
-            
-        except Exception as e:
-            db.session.rollback()
-            print(f"Veritabanı oluşturulurken hata: {str(e)}")
 
 if __name__ == '__main__':
-    init_db()  # Veritabanını yeniden oluştur
-    
-    port = int(os.environ.get('PORT', 5004))
-    app.run(host='0.0.0.0', port=port)
+    init_db()  # Initialize database before running the app
+    app.run(debug=True)
