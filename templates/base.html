@@ -121,27 +121,22 @@
 
         // Smooth scroll functionality
         document.addEventListener('DOMContentLoaded', function() {
-            const offset = 80; // Navbar height
-            
-            // Smooth scroll for all links with smooth-scroll class and hero buttons
-            document.querySelectorAll('a.smooth-scroll, .hero-content .btn').forEach(anchor => {
+            // Smooth scroll for all links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
                 anchor.addEventListener('click', function(e) {
                     e.preventDefault();
                     const targetId = this.getAttribute('href');
+                    const targetElement = document.querySelector(targetId);
                     
-                    if (targetId && targetId.startsWith('#')) {
-                        const targetElement = document.querySelector(targetId);
-                        
-                        if (targetElement) {
-                            const targetPosition = targetElement.getBoundingClientRect().top + window.pageYOffset - offset;
-                            window.scrollTo({
-                                top: targetPosition,
-                                behavior: 'smooth'
-                            });
-                            
-                            // Update URL without jumping
-                            history.pushState(null, null, targetId);
-                        }
+                    if (targetElement) {
+                        const headerOffset = 80;
+                        const elementPosition = targetElement.getBoundingClientRect().top;
+                        const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+                        window.scrollTo({
+                            top: offsetPosition,
+                            behavior: 'smooth'
+                        });
                     }
                 });
             });
