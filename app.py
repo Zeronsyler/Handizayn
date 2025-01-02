@@ -50,6 +50,12 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(120), nullable=False)
 
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
 class Category(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(200), unique=True, nullable=False)
@@ -112,7 +118,7 @@ def login():
         password = request.form.get('password')
         user = User.query.filter_by(username=username).first()
         
-        if user and check_password_hash(user.password_hash, password):
+        if user and user.check_password(password):
             login_user(user)
             return redirect(url_for('admin'))
         flash('Geçersiz kullanıcı adı veya şifre')
@@ -389,30 +395,49 @@ def create_tables():
             db.session.commit()
 
 def init_default_images():
-    # Hero görseli
-    if not Image.query.filter_by(section='hero').first():
-        hero_image = Image(
-            section='hero',
-            path='images/hero/hero.jpg'
-        )
-        db.session.add(hero_image)
+    try:
+        with app.app_context():
+            db.create_all()
+            if not Image.query.filter_by(section='hero').first():
+                # Hero image'ı Cloudinary'ye yükle
+                hero_image_path = os.path.join(app.config['UPLOAD_FOLDER'], 'hero-carpet.jpg')
+                if os.path.exists(hero_image_path):
+                    try:
+                        upload_result = cloudinary.uploader.upload(hero_image_path)
+                        hero_image = Image(
+                            section='hero',
+                            path=upload_result['secure_url']
+                        )
+                        db.session.add(hero_image)
+                        db.session.commit()
+                        print("Hero image yüklendi:", upload_result['secure_url'])
+                    except Exception as e:
+                        print(f"Hero image yüklenirken hata: {e}")
+                else:
+                    print("Hero image bulunamadı:", hero_image_path)
 
-    # About görseli
-    if not Image.query.filter_by(section='about').first():
-        about_image = Image(
-            section='about',
-            path='images/about/about.jpg'
-        )
-        db.session.add(about_image)
-
-    db.session.commit()
+            if not Image.query.filter_by(section='about').first():
+                about_image = Image(
+                    section='about',
+                    path='https://res.cloudinary.com/dy46noypm/image/upload/v1703922471/about_xtpxzd.jpg'
+                )
+                db.session.add(about_image)
+                db.session.commit()
+    except Exception as e:
+        print(f"Default resimler yüklenirken hata: {e}")
 
 def init_admin_user():
-    if not User.query.filter_by(username='admin').first():
-        admin = User(username='admin')
-        admin.password_hash = generate_password_hash('admin123')
-        db.session.add(admin)
-        db.session.commit()
+    try:
+        with app.app_context():
+            db.create_all()
+            if not User.query.filter_by(username='admin').first():
+                admin = User(username='admin')
+                admin.set_password('admin123')
+                db.session.add(admin)
+                db.session.commit()
+                print("Admin kullanıcısı oluşturuldu")
+    except Exception as e:
+        print(f"Admin kullanıcısı oluşturulurken hata: {e}")
 
 if __name__ == '__main__':
     init_default_images()
