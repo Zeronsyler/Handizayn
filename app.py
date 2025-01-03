@@ -431,6 +431,7 @@ def init_db():
         try:
             # Tabloları oluştur
             db.create_all()
+            print("Tablolar oluşturuldu!")
             
             # Admin kullanıcısını kontrol et ve oluştur
             if not User.query.filter_by(username='admin').first():
@@ -452,7 +453,10 @@ def init_db():
             db.session.rollback()
             print(f"Veritabanı başlatma hatası: {str(e)}")
 
+# Uygulama başlatıldığında veritabanını oluştur
+with app.app_context():
+    init_db()
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5004))
-    init_db()  # Veritabanını başlat
     app.run(host='0.0.0.0', port=port)
