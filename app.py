@@ -426,36 +426,32 @@ def slugify(text):
     text = '-'.join(text.split())
     return text
 
-def init_db():
-    with app.app_context():
-        try:
-            # Tabloları oluştur
-            db.create_all()
-            print("Tablolar oluşturuldu!")
-            
-            # Admin kullanıcısını kontrol et ve oluştur
-            if not User.query.filter_by(username='admin').first():
-                admin = User(username='admin')
-                admin.set_password('admin123')
-                db.session.add(admin)
-                db.session.commit()
-                print("Admin kullanıcısı oluşturuldu!")
-            
-            # Varsayılan kategoriyi oluştur
-            if not Category.query.first():
-                default_category = Category(name='Genel')
-                default_category.save()
-                db.session.add(default_category)
-                db.session.commit()
-                print("Varsayılan kategori oluşturuldu!")
-                
-        except Exception as e:
-            db.session.rollback()
-            print(f"Veritabanı başlatma hatası: {str(e)}")
-
 # Uygulama başlatıldığında veritabanını oluştur
 with app.app_context():
-    init_db()
+    try:
+        # Tabloları oluştur
+        db.create_all()
+        print("Tablolar oluşturuldu!")
+        
+        # Admin kullanıcısını kontrol et ve oluştur
+        if not User.query.filter_by(username='admin').first():
+            admin = User(username='admin')
+            admin.set_password('admin123')
+            db.session.add(admin)
+            db.session.commit()
+            print("Admin kullanıcısı oluşturuldu!")
+        
+        # Varsayılan kategoriyi oluştur
+        if not Category.query.first():
+            default_category = Category(name='Genel')
+            default_category.save()
+            db.session.add(default_category)
+            db.session.commit()
+            print("Varsayılan kategori oluşturuldu!")
+            
+    except Exception as e:
+        db.session.rollback()
+        print(f"Veritabanı başlatma hatası: {str(e)}")
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5004))
